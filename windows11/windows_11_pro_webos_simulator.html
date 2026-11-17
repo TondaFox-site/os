@@ -1,0 +1,3335 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Windows 11 Pro — WebOS Simulátor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --win-accent: #0078d4;
+      --win-accent-hover: #1084d9;
+      --win-bg-mica: rgba(243, 243, 243, 0.82);
+      --win-bg-card: rgba(255, 255, 255, 0.78);
+      --win-text: #1a1a1a;
+      --win-text-muted: #5e5e5e;
+      --win-border: rgba(255, 255, 255, 0.45);
+      --win-border-subtle: rgba(0, 0, 0, 0.08);
+      --win-shadow: 0 18px 48px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    body.dark-theme {
+      --win-accent: #4cc2ff;
+      --win-accent-hover: #60cdff;
+      --win-bg-mica: rgba(32, 32, 32, 0.84);
+      --win-bg-card: rgba(44, 44, 44, 0.78);
+      --win-text: #f3f3f3;
+      --win-text-muted: #a6a6a6;
+      --win-border: rgba(255, 255, 255, 0.12);
+      --win-border-subtle: rgba(255, 255, 255, 0.08);
+      --win-shadow: 0 20px 55px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    input, textarea, pre, code, .selectable {
+      user-select: text;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: var(--win-text);
+    }
+
+    /* Windows 11 Bloom Wallpapers */
+    .wallpaper-bloom-light {
+      background: radial-gradient(circle at 25% 20%, #a5d8ff 0%, transparent 45%),
+                  radial-gradient(circle at 75% 75%, #4dabf7 0%, transparent 50%),
+                  linear-gradient(135deg, #d0ebff 0%, #74c0fc 45%, #339af0 100%);
+    }
+    .wallpaper-bloom-dark {
+      background: radial-gradient(circle at 30% 25%, #1c7ed6 0%, transparent 45%),
+                  radial-gradient(circle at 75% 70%, #0b2545 0%, transparent 55%),
+                  linear-gradient(135deg, #030712 0%, #0a192f 50%, #020617 100%);
+    }
+    .wallpaper-sunset {
+      background: radial-gradient(circle at 20% 20%, #ff922b 0%, transparent 45%),
+                  radial-gradient(circle at 80% 75%, #845ef7 0%, transparent 50%),
+                  linear-gradient(135deg, #2b1055 0%, #7597de 100%);
+    }
+    .wallpaper-emerald {
+      background: radial-gradient(circle at 70% 25%, #20c997 0%, transparent 45%),
+                  radial-gradient(circle at 25% 80%, #087f5b 0%, transparent 50%),
+                  linear-gradient(135deg, #041f1e 0%, #0b4f4a 55%, #099268 100%);
+    }
+
+    /* Animated Bloom Flower SVG overlay */
+    .bloom-flower {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .bloom-petal {
+      animation: bloomFloat 12s ease-in-out infinite alternate;
+      transform-origin: center;
+    }
+
+    @keyframes bloomFloat {
+      0% { transform: scale(1) rotate(0deg); }
+      100% { transform: scale(1.06) rotate(4deg); }
+    }
+
+    /* Windows 11 Spinner Ring */
+    .win11-spinner {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #ffffff;
+      animation: winSpin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+    }
+    .win11-spinner.accent {
+      border-color: rgba(0, 120, 212, 0.2);
+      border-top-color: var(--win-accent);
+    }
+
+    @keyframes winSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Mica / Acrylic Glass Surfaces */
+    .win-mica {
+      background: var(--win-bg-mica);
+      backdrop-filter: blur(26px) saturate(160%);
+      -webkit-backdrop-filter: blur(26px) saturate(160%);
+      border: 1px solid var(--win-border);
+      box-shadow: var(--win-shadow);
+    }
+
+    .win-card {
+      background: var(--win-bg-card);
+      border: 1px solid var(--win-border-subtle);
+      border-radius: 10px;
+    }
+
+    /* Window Styling & Transitions */
+    .win-window {
+      position: absolute;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      min-width: 340px;
+      min-height: 240px;
+    }
+
+    .win-window.minimized {
+      opacity: 0;
+      transform: scale(0.92) translateY(30px);
+      pointer-events: none;
+    }
+
+    .win-window.maximized {
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: calc(100% - 48px) !important;
+      border-radius: 0 !important;
+    }
+
+    .win-titlebar {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-left: 12px;
+      cursor: default;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--win-border-subtle);
+    }
+
+    .win-ctrl-btn {
+      width: 44px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: background 0.15s;
+    }
+    .win-ctrl-btn:hover {
+      background: rgba(128, 128, 128, 0.18);
+    }
+    .win-ctrl-btn.close:hover {
+      background: #e81123;
+      color: #ffffff;
+    }
+
+    /* Desktop Icons */
+    .desktop-icon {
+      width: 82px;
+      padding: 8px 4px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      border: 1px solid transparent;
+    }
+    .desktop-icon:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    .desktop-icon.selected {
+      background: rgba(76, 194, 255, 0.25);
+      border-color: rgba(76, 194, 255, 0.55);
+    }
+    .desktop-icon span {
+      font-size: 11.5px;
+      line-height: 1.25;
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+      margin-top: 5px;
+      word-break: break-word;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Taskbar */
+    #taskbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      z-index: 9000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      border-top: 1px solid var(--win-border);
+    }
+
+    .taskbar-item {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .taskbar-item:hover {
+      background: rgba(128, 128, 128, 0.18);
+    }
+    .taskbar-item:active i, .taskbar-item:active svg {
+      transform: scale(0.86);
+    }
+    .taskbar-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      width: 16px;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--win-accent);
+    }
+    .taskbar-item.open::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      width: 6px;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--win-text-muted);
+    }
+    .taskbar-item.open.active::after {
+      width: 16px;
+      background: var(--win-accent);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(128, 128, 128, 0.35);
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(128, 128, 128, 0.55);
+    }
+
+    /* OBS Audio Meter Animation */
+    @keyframes audioPulse {
+      0%, 100% { width: 45%; }
+      25% { width: 78%; }
+      50% { width: 62%; }
+      75% { width: 88%; }
+    }
+    .obs-meter-fill {
+      background: linear-gradient(90deg, #22c55e 0%, #22c55e 70%, #eab308 88%, #ef4444 100%);
+      animation: audioPulse 1.4s infinite ease-in-out;
+    }
+    .obs-meter-fill.delayed {
+      animation-delay: 0.45s;
+    }
+
+    /* Snap Layout Popup */
+    .snap-popup {
+      position: absolute;
+      top: 36px;
+      right: 36px;
+      width: 170px;
+      padding: 8px;
+      border-radius: 8px;
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      z-index: 9999;
+    }
+    .maximize-wrapper:hover .snap-popup {
+      display: grid;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+
+  <!-- ==================== 1. OOBE SETUP WIZARD ==================== -->
+  <div id="oobe-screen" class="fixed inset-0 z-[10000] wallpaper-bloom-dark flex items-center justify-center p-4 transition-opacity duration-500">
+    <div class="bloom-flower opacity-45">
+      <svg width="700" height="700" viewBox="0 0 600 600" class="bloom-petal">
+        <defs>
+          <radialGradient id="petalGrad1" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#60cdff" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#005fb8" stop-opacity="0.1"/>
+          </radialGradient>
+        </defs>
+        <path d="M300,300 C380,140 500,180 460,300 C500,420 380,460 300,300 Z" fill="url(#petalGrad1)"/>
+        <path d="M300,300 C220,140 100,180 140,300 C100,420 220,460 300,300 Z" fill="url(#petalGrad1)"/>
+        <path d="M300,300 C140,220 180,100 300,140 C420,100 460,220 300,300 Z" fill="url(#petalGrad1)"/>
+        <path d="M300,300 C140,380 180,500 300,460 C420,500 460,380 300,300 Z" fill="url(#petalGrad1)"/>
+      </svg>
+    </div>
+
+    <div class="win-mica w-full max-w-4xl rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-12 relative z-10 shadow-2xl min-h-[520px]">
+      <!-- Left Illustration Panel -->
+      <div class="md:col-span-5 bg-gradient-to-br from-[#0078d4]/30 to-[#0a192f]/70 p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-white/10">
+        <div>
+          <div class="flex items-center gap-2.5 text-white font-semibold text-lg mb-6">
+            <i class="fa-brands fa-windows text-2xl text-[#4cc2ff]"></i>
+            <span>Windows 11 Pro</span>
+          </div>
+          <div id="oobe-illustration" class="my-6 flex flex-col items-center justify-center text-center">
+            <div class="w-28 h-28 rounded-3xl bg-white/10 border border-white/20 flex items-center justify-center shadow-lg mb-4">
+              <i id="oobe-hero-icon" class="fa-solid fa-earth-europe text-5xl text-[#4cc2ff]"></i>
+            </div>
+            <p id="oobe-hero-caption" class="text-xs text-white/70">Nastavení regionálních předvoleb a systému</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs text-white/70">
+            <span>Průvodce nastavením</span>
+            <span id="oobe-step-indicator">Krok 1 z 4</span>
+          </div>
+          <div class="w-full h-1.5 bg-white/15 rounded-full overflow-hidden">
+            <div id="oobe-progress-bar" class="h-full bg-[#4cc2ff] transition-all duration-300" style="width: 25%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Interactive Step Panel -->
+      <div class="md:col-span-7 p-8 flex flex-col justify-between bg-[#1c1c1c]/80 text-white">
+        <div id="oobe-step-content" class="space-y-4">
+          <!-- Rendered dynamically by JS -->
+        </div>
+
+        <div class="pt-6 border-t border-white/10 flex items-center justify-between">
+          <button id="oobe-back-btn" onclick="oobePrevStep()" class="px-5 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-sm font-medium transition hidden">
+            Zpět
+          </button>
+          <div class="flex items-center gap-3 ml-auto">
+            <button onclick="skipOobeDemo()" class="px-4 py-2.5 rounded-lg text-xs text-white/60 hover:text-white transition">
+              Rychlý demo start
+            </button>
+            <button id="oobe-next-btn" onclick="oobeNextStep()" class="px-7 py-2.5 rounded-lg bg-[#4cc2ff] hover:bg-[#60cdff] text-black font-semibold text-sm shadow-lg transition">
+              Ano, pokračovat
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. FULLSCREEN LOADING ("Vše pro vás připravujeme" / "Vítejte") ==================== -->
+  <div id="fullscreen-loader" class="fixed inset-0 z-[10500] hidden flex-col items-center justify-center text-white text-center p-6 transition-opacity duration-500">
+    <div id="loader-bg" class="absolute inset-0 wallpaper-bloom-dark"></div>
+    <div class="relative z-10 flex flex-col items-center max-w-lg">
+      <div class="win11-spinner mb-7"></div>
+      <h1 id="loader-title" class="text-2xl md:text-3xl font-light tracking-wide mb-3">Vše pro vás připravujeme...</h1>
+      <p id="loader-subtitle" class="text-sm text-white/75">Může to trvat několik minut. Nevypínejte počítač.</p>
+    </div>
+  </div>
+
+  <!-- ==================== 3. LOCK SCREEN & LOGIN SCREEN ==================== -->
+  <div id="lock-screen" class="fixed inset-0 z-[9500] hidden flex-col justify-between text-white transition-all duration-500">
+    <div class="absolute inset-0 wallpaper-bloom-dark"></div>
+    <div id="lock-blur-overlay" class="absolute inset-0 backdrop-blur-none bg-black/10 transition-all duration-500"></div>
+
+    <!-- Lock Clock View -->
+    <div id="lock-clock-view" onclick="showLoginForm()" class="relative z-10 flex-1 flex flex-col items-center justify-start pt-20 cursor-pointer">
+      <div id="lock-time" class="text-7xl md:text-8xl font-semibold tracking-tight drop-shadow-lg">12:23</div>
+      <div id="lock-date" class="text-lg md:text-xl font-normal mt-2 text-white/90 drop-shadow">Úterý, 17. listopadu</div>
+      <div class="mt-auto mb-12 flex flex-col items-center animate-bounce text-white/75 text-sm">
+        <i class="fa-solid fa-chevron-up mb-1"></i>
+        <span>Klikněte nebo stiskněte Enter pro odemčení</span>
+      </div>
+    </div>
+
+    <!-- Login Form View -->
+    <div id="lock-login-view" class="relative z-10 flex-1 hidden flex-col items-center justify-center p-4">
+      <div class="w-32 h-32 rounded-full bg-gradient-to-tr from-[#0078d4] to-[#4cc2ff] flex items-center justify-center text-4xl font-bold shadow-2xl border-4 border-white/25 mb-4">
+        <span id="login-avatar-initials">U</span>
+      </div>
+      <h2 id="login-username-display" class="text-2xl font-semibold mb-1">Uživatel</h2>
+      <p id="login-ms-email-display" class="text-xs text-white/70 mb-5">Microsoft účet připojen</p>
+
+      <div id="login-password-box" class="w-full max-w-xs space-y-3">
+        <div class="relative">
+          <input id="login-password-input" type="password" placeholder="Heslo k účtu" onkeydown="if(event.key==='Enter') handleLoginSubmit()" class="w-full px-4 py-2.5 rounded-lg bg-black/50 border border-white/25 focus:border-[#4cc2ff] outline-none text-sm text-white placeholder-white/50 pr-10" />
+          <button onclick="handleLoginSubmit()" class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded bg-white/15 hover:bg-[#4cc2ff] hover:text-black flex items-center justify-center transition">
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </div>
+        <p id="login-error-msg" class="text-xs text-rose-400 text-center hidden">Nesprávné heslo. Zkuste to znovu.</p>
+      </div>
+
+      <button id="login-nopass-btn" onclick="handleLoginSubmit()" class="mt-3 px-8 py-2.5 rounded-lg bg-white/15 hover:bg-white/25 border border-white/25 text-sm font-medium backdrop-blur-md transition">
+        Přihlásit se
+      </button>
+
+      <!-- Account Switcher & OOBE Reset -->
+      <div class="mt-10 flex flex-wrap items-center justify-center gap-3 text-xs">
+        <button onclick="switchAccountModal()" class="px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 flex items-center gap-2 transition">
+          <i class="fa-solid fa-users"></i> Přepnout Microsoft účet
+        </button>
+        <button onclick="resetToOobe()" class="px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 flex items-center gap-2 transition">
+          <i class="fa-solid fa-rotate-left"></i> Spustit znovu OOBE Setup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 4. MAIN DESKTOP ENVIRONMENT ==================== -->
+  <div id="desktop-environment" class="relative w-full h-full wallpaper-bloom-dark overflow-hidden" onclick="handleDesktopClick(event)" oncontextmenu="showDesktopContextMenu(event)">
+    <!-- Decorative Bloom -->
+    <div class="bloom-flower opacity-40">
+      <svg width="820" height="820" viewBox="0 0 600 600" class="bloom-petal">
+        <defs>
+          <radialGradient id="deskPetal" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#4cc2ff" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#005fb8" stop-opacity="0.05"/>
+          </radialGradient>
+        </defs>
+        <path d="M300,300 C380,140 500,180 460,300 C500,420 380,460 300,300 Z" fill="url(#deskPetal)"/>
+        <path d="M300,300 C220,140 100,180 140,300 C100,420 220,460 300,300 Z" fill="url(#deskPetal)"/>
+        <path d="M300,300 C140,220 180,100 300,140 C420,100 460,220 300,300 Z" fill="url(#deskPetal)"/>
+        <path d="M300,300 C140,380 180,500 300,460 C420,500 460,380 300,300 Z" fill="url(#deskPetal)"/>
+      </svg>
+    </div>
+
+    <!-- Top-Right Cloud Sync Status Pill -->
+    <div onclick="openApp('settings', {tab: 'accounts'})" title="Stav synchronizace database/ a Microsoft účtu" class="fixed top-3 right-3 z-20 win-mica px-3 py-1.5 rounded-full flex items-center gap-2 text-xs cursor-pointer hover:scale-[1.02] transition">
+      <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span id="sync-status-label" class="font-medium">OneDrive & database/ aktivní</span>
+    </div>
+
+    <!-- Desktop Icons Grid -->
+    <div id="desktop-icons-container" class="relative z-10 p-3 flex flex-col flex-wrap content-start gap-1.5 h-[calc(100%-52px)] w-fit">
+      <!-- Populated dynamically from Virtual File System Desktop -->
+    </div>
+
+    <!-- Windows Container -->
+    <div id="windows-container" class="absolute inset-0 pointer-events-none z-30">
+      <!-- Open Application Windows injected here -->
+    </div>
+
+    <!-- Desktop Context Menu -->
+    <div id="desktop-context-menu" class="fixed hidden z-[8500] win-mica w-56 rounded-xl p-1.5 text-xs shadow-2xl">
+      <button onclick="refreshDesktop(); hideAllPopups()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 flex items-center gap-2.5">
+        <i class="fa-solid fa-rotate-right w-4 text-center text-[#4cc2ff]"></i> Aktualizovat
+      </button>
+      <button onclick="createNewFolderOnDesktop(); hideAllPopups()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 flex items-center gap-2.5">
+        <i class="fa-solid fa-folder-plus w-4 text-center text-amber-400"></i> Nová složka
+      </button>
+      <button onclick="openApp('notepad'); hideAllPopups()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 flex items-center gap-2.5">
+        <i class="fa-solid fa-file-lines w-4 text-center text-sky-400"></i> Nový textový dokument
+      </button>
+      <div class="my-1 border-t border-white/10"></div>
+      <button onclick="openApp('terminal'); hideAllPopups()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 flex items-center gap-2.5">
+        <i class="fa-solid fa-terminal w-4 text-center"></i> Otevřít v Terminálu
+      </button>
+      <button onclick="openApp('obs'); hideAllPopups()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 flex items-center gap-2.5">
+        <i class="fa-solid fa-video w-4 text-center text-rose-400"></i> Spustit OBS Studio
+      </button>
+      <div class="my-1 border-t border-white/10"></div>
+      <button onclick="openApp('settings', {tab: 'personalization'}); hideAllPopups()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 flex items-center gap-2.5">
+        <i class="fa-solid fa-paintbrush w-4 text-center text-purple-400"></i> Přizpůsobit
+      </button>
+    </div>
+
+    <!-- ==================== START MENU ==================== -->
+    <div id="start-menu" onclick="event.stopPropagation()" class="fixed bottom-14 left-1/2 -translate-x-1/2 w-[94vw] max-w-[620px] win-mica rounded-2xl p-6 z-[8800] hidden flex-col transition-all duration-200">
+      <!-- Search Bar -->
+      <div class="relative mb-5">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs opacity-60"></i>
+        <input id="start-search-input" oninput="filterStartApps(this.value)" type="text" placeholder="Hledat aplikace, nastavení a soubory..." class="w-full pl-9 pr-4 py-2 rounded-full bg-black/25 border border-white/15 focus:border-[#4cc2ff] outline-none text-xs" />
+      </div>
+
+      <!-- Pinned Apps -->
+      <div class="flex items-center justify-between mb-3 px-1">
+        <span class="text-xs font-semibold">Připnuté</span>
+        <button onclick="openApp('explorer'); hideAllPopups()" class="text-[11px] px-2.5 py-1 rounded bg-white/10 hover:bg-white/15">Všechny soubory &rsaquo;</button>
+      </div>
+      <div id="start-pinned-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-5">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Recommended / Recent -->
+      <div class="flex items-center justify-between mb-2.5 px-1">
+        <span class="text-xs font-semibold">Doporučené a nedávné</span>
+        <span class="text-[11px] opacity-60">OneDrive & Lokální</span>
+      </div>
+      <div id="start-recommended-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5 max-h-36 overflow-y-auto">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Bottom User & Power Bar -->
+      <div class="pt-3 border-t border-white/10 flex items-center justify-between">
+        <button onclick="openApp('settings', {tab: 'accounts'}); hideAllPopups()" class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition">
+          <div class="w-8 h-8 rounded-full bg-[#0078d4] text-white flex items-center justify-center font-bold text-xs" id="start-user-avatar">U</div>
+          <div class="text-left">
+            <div id="start-user-name" class="text-xs font-semibold leading-tight">Uživatel</div>
+            <div id="start-user-email" class="text-[10px] opacity-65">lokální účet</div>
+          </div>
+        </button>
+
+        <div class="flex items-center gap-1">
+          <button onclick="lockComputer()" title="Uzamknout" class="w-9 h-9 rounded-lg hover:bg-white/10 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-lock"></i>
+          </button>
+          <button onclick="signOutUser()" title="Odhlásit se" class="w-9 h-9 rounded-lg hover:bg-white/10 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+          <button onclick="restartSystem()" title="Restartovat" class="w-9 h-9 rounded-lg hover:bg-rose-500/25 text-rose-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-power-off"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== WIDGETS PANEL ==================== -->
+    <div id="widgets-panel" onclick="event.stopPropagation()" class="fixed bottom-14 left-3 w-[92vw] max-w-[380px] h-[75vh] max-h-[580px] win-mica rounded-2xl p-5 z-[8800] hidden flex-col gap-4 overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold text-sm">Widgety</h3>
+        <span class="text-xs opacity-65" id="widget-date-badge">Praha, ČR</span>
+      </div>
+
+      <!-- Weather Card -->
+      <div class="win-card p-4 bg-gradient-to-br from-sky-500/20 to-indigo-600/20">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs opacity-75">Praha, Česko</div>
+            <div class="text-3xl font-bold mt-1">14 °C</div>
+            <div class="text-xs text-sky-300 mt-0.5">Polojasno • Vítr 12 km/h</div>
+          </div>
+          <i class="fa-solid fa-cloud-sun text-4xl text-amber-300"></i>
+        </div>
+      </div>
+
+      <!-- Cloud & Storage Card -->
+      <div class="win-card p-4 space-y-2">
+        <div class="flex items-center justify-between text-xs font-semibold">
+          <span><i class="fa-solid fa-cloud text-[#4cc2ff] mr-1.5"></i>OneDrive & GitHub database/</span>
+          <button onclick="openApp('settings', {tab: 'privacy'}); hideAllPopups()" class="text-[#4cc2ff] hover:underline">Nastavit</button>
+        </div>
+        <p class="text-xs opacity-75">Režim ukládání: <strong id="widget-storage-mode">Pokaždé se zeptat</strong></p>
+        <div class="text-[11px] opacity-65 flex justify-between pt-1">
+          <span id="widget-files-count">Soubory: 0</span>
+          <span id="widget-links-count">Sdílené odkazy: 0</span>
+        </div>
+      </div>
+
+      <!-- Quick Note Widget -->
+      <div class="win-card p-4 space-y-2">
+        <div class="text-xs font-semibold flex items-center justify-between">
+          <span><i class="fa-solid fa-note-sticky text-amber-400 mr-1.5"></i>Rychlá poznámka</span>
+          <button onclick="saveQuickWidgetNote()" class="px-2 py-0.5 rounded bg-[#4cc2ff] text-black font-semibold text-[11px]">Uložit do Dokumentů</button>
+        </div>
+        <textarea id="widget-quick-note" rows="3" placeholder="Zapište si rychlou myšlenku..." class="w-full bg-black/20 rounded-lg p-2 text-xs outline-none border border-white/10 focus:border-[#4cc2ff]"></textarea>
+      </div>
+    </div>
+
+    <!-- ==================== QUICK SETTINGS & CALENDAR ==================== -->
+    <div id="quick-settings-panel" onclick="event.stopPropagation()" class="fixed bottom-14 right-3 w-[92vw] max-w-[340px] win-mica rounded-2xl p-4 z-[8800] hidden flex-col gap-4">
+      <div class="grid grid-cols-3 gap-2">
+        <button id="qs-wifi" onclick="toggleQuickTile('wifi')" class="p-3 rounded-xl bg-[#4cc2ff] text-black font-medium text-xs flex flex-col items-start gap-2 transition">
+          <i class="fa-solid fa-wifi text-sm"></i>
+          <span>Wi-Fi</span>
+        </button>
+        <button id="qs-bt" onclick="toggleQuickTile('bt')" class="p-3 rounded-xl bg-[#4cc2ff] text-black font-medium text-xs flex flex-col items-start gap-2 transition">
+          <i class="fa-brands fa-bluetooth-b text-sm"></i>
+          <span>Bluetooth</span>
+        </button>
+        <button id="qs-theme" onclick="toggleSystemTheme()" class="p-3 rounded-xl bg-white/10 hover:bg-white/15 font-medium text-xs flex flex-col items-start gap-2 transition">
+          <i class="fa-solid fa-circle-half-stroke text-sm"></i>
+          <span>Motiv</span>
+        </button>
+        <button id="qs-night" onclick="toggleNightLight()" class="p-3 rounded-xl bg-white/10 hover:bg-white/15 font-medium text-xs flex flex-col items-start gap-2 transition">
+          <i class="fa-solid fa-moon text-sm"></i>
+          <span>Noční režim</span>
+        </button>
+        <button onclick="openApp('obs'); hideAllPopups()" class="p-3 rounded-xl bg-white/10 hover:bg-white/15 font-medium text-xs flex flex-col items-start gap-2 transition">
+          <i class="fa-solid fa-camera text-sm text-rose-400"></i>
+          <span>OBS Záznam</span>
+        </button>
+        <button onclick="openApp('links'); hideAllPopups()" class="p-3 rounded-xl bg-white/10 hover:bg-white/15 font-medium text-xs flex flex-col items-start gap-2 transition">
+          <i class="fa-solid fa-link text-sm text-emerald-400"></i>
+          <span>Odkazy</span>
+        </button>
+      </div>
+
+      <div class="space-y-3 pt-1">
+        <div class="flex items-center gap-3 text-xs">
+          <i class="fa-solid fa-sun w-4 text-center"></i>
+          <input type="range" min="40" max="100" value="100" oninput="document.getElementById('desktop-environment').style.filter = 'brightness(' + this.value + '%)'" class="flex-1 accent-[#4cc2ff]" />
+        </div>
+        <div class="flex items-center gap-3 text-xs">
+          <i class="fa-solid fa-volume-high w-4 text-center"></i>
+          <input type="range" min="0" max="100" value="80" class="flex-1 accent-[#4cc2ff]" />
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-white/10 flex items-center justify-between text-xs opacity-75">
+        <span><i class="fa-solid fa-battery-full text-emerald-400 mr-1.5"></i>98 % Nabito</span>
+        <button onclick="openApp('settings'); hideAllPopups()" class="hover:text-[#4cc2ff]"><i class="fa-solid fa-gear"></i></button>
+      </div>
+    </div>
+
+    <!-- ==================== TASKBAR ==================== -->
+    <div id="taskbar" class="win-mica" onclick="event.stopPropagation()">
+      <!-- Left: Widgets -->
+      <div class="flex items-center">
+        <button onclick="togglePopup('widgets-panel')" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition text-xs">
+          <i class="fa-solid fa-cloud-sun text-amber-300 text-base"></i>
+          <div class="hidden sm:block text-left leading-tight">
+            <div class="font-semibold">14 °C</div>
+            <div class="text-[10px] opacity-70">Polojasno</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Center: Start, Search, Pinned & Running Apps -->
+      <div id="taskbar-center" class="flex items-center gap-1">
+        <button onclick="togglePopup('start-menu')" title="Start" class="taskbar-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="2" width="9" height="9" rx="1.5" fill="#4cc2ff"/>
+            <rect x="13" y="2" width="9" height="9" rx="1.5" fill="#4cc2ff"/>
+            <rect x="2" y="13" width="9" height="9" rx="1.5" fill="#0078d4"/>
+            <rect x="13" y="13" width="9" height="9" rx="1.5" fill="#0078d4"/>
+          </svg>
+        </button>
+        <div id="taskbar-apps" class="flex items-center gap-1">
+          <!-- Dynamically populated pinned + open apps -->
+        </div>
+      </div>
+
+      <!-- Right: System Tray & Clock -->
+      <div class="flex items-center gap-1">
+        <button onclick="openApp('links')" title="Odkazy (database/link.txt)" class="px-2 py-1.5 rounded-lg hover:bg-white/10 text-xs hidden md:flex items-center gap-1.5">
+          <i class="fa-solid fa-link text-[#4cc2ff]"></i>
+        </button>
+        <button onclick="togglePopup('quick-settings-panel')" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/10 text-xs transition">
+          <i class="fa-solid fa-wifi"></i>
+          <i class="fa-solid fa-volume-high"></i>
+          <i class="fa-solid fa-battery-three-quarters"></i>
+        </button>
+        <div onclick="togglePopup('quick-settings-panel')" class="px-2.5 py-1 rounded-lg hover:bg-white/10 text-right cursor-pointer leading-tight">
+          <div id="taskbar-time" class="text-xs font-medium">12:23</div>
+          <div id="taskbar-date" class="text-[10px] opacity-80">17. 11. 2026</div>
+        </div>
+        <button onclick="minimizeAllWindows()" title="Zobrazit plochu" class="w-1.5 h-7 ml-1 border-l border-white/20 hover:bg-white/20"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 5. ONEDRIVE SAVE PROMPT MODAL ("Pokaždé se zeptat") ==================== -->
+  <div id="onedrive-prompt-modal" class="fixed inset-0 z-[11000] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="win-mica w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-[#0078d4]/25 border border-[#4cc2ff]/40 flex items-center justify-center text-[#4cc2ff] text-xl">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+        <div>
+          <h3 class="font-semibold text-base">Kam chcete tento obsah uložit?</h3>
+          <p id="onedrive-prompt-filename" class="text-xs opacity-75">Soubor: zaznam.mp4</p>
+        </div>
+      </div>
+
+      <p class="text-xs opacity-85 leading-relaxed">
+        Máte aktivní režim <strong>„Pokaždé se zeptat“</strong> (Nastavení &rarr; Soukromí &rarr; OneDrive). Zvolte, zda se má položka uložit veřejně do sdílené databáze účtu (<code>database/</code>), nebo pouze lokálně do tohoto zařízení.
+      </p>
+
+      <div class="grid grid-cols-1 gap-2.5 pt-1">
+        <button onclick="resolveOneDrivePrompt('public')" class="w-full p-3.5 rounded-xl bg-[#0078d4] hover:bg-[#1084d9] text-white text-left flex items-center justify-between transition shadow-md">
+          <div>
+            <div class="text-xs font-semibold flex items-center gap-2">
+              <i class="fa-solid fa-globe"></i> Veřejně (do sdíleného OneDrive / database)
+            </div>
+            <div class="text-[11px] text-white/80 mt-0.5">Synchronizuje se napříč vašimi zařízeními pod Microsoft účtem</div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
+
+        <button onclick="resolveOneDrivePrompt('local')" class="w-full p-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-left flex items-center justify-between transition">
+          <div>
+            <div class="text-xs font-semibold flex items-center gap-2">
+              <i class="fa-solid fa-hard-drive text-amber-400"></i> Lokálně (pouze v tomto zařízení)
+            </div>
+            <div class="text-[11px] opacity-70 mt-0.5">Uloží se pouze do lokálních souborů tohoto simulátoru</div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 text-[11px] opacity-70">
+        <span>Lze změnit v Nastavení &rarr; Soukromí</span>
+        <button onclick="resolveOneDrivePrompt('cancel')" class="hover:underline">Zrušit akci</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 6. VS CODE EXPORT .EXE WIZARD MODAL ==================== -->
+  <div id="vscode-export-modal" class="fixed inset-0 z-[11000] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="win-mica w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-cube text-[#4cc2ff] text-lg"></i>
+          <h3 class="font-semibold text-base">Kompilace a export aplikace (.exe)</h3>
+        </div>
+        <button onclick="closeModal('vscode-export-modal')" class="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">1. Název výsledné aplikace (.exe)</label>
+          <input id="export-exe-name" type="text" value="MojeAplikace.exe" placeholder="např. SuperHra.exe" class="w-full px-3.5 py-2.5 rounded-xl bg-black/30 border border-white/15 focus:border-[#4cc2ff] outline-none text-sm" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold mb-2">2. Vyberte ikonu aplikace pro plochu Windows 11</label>
+          <div id="export-icon-picker" class="grid grid-cols-5 sm:grid-cols-6 gap-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-white/10 flex items-center justify-end gap-2.5">
+        <button onclick="closeModal('vscode-export-modal')" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-medium">Zrušit</button>
+        <button onclick="confirmExportExe()" class="px-5 py-2 rounded-xl bg-[#4cc2ff] hover:bg-[#60cdff] text-black font-semibold text-xs flex items-center gap-2 shadow-lg">
+          <i class="fa-solid fa-download"></i> Sestavit a stáhnout na Plochu
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 7. TOAST NOTIFICATION CONTAINER ==================== -->
+  <div id="toast-container" class="fixed bottom-16 right-4 z-[12000] flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ==================== JAVASCRIPT CORE ==================== -->
+  <script>
+    /*************************************************************************
+     * 1. GLOBAL STATE & DATABASE / GITHUB SYNC ARCHITECTURE
+     *************************************************************************/
+    const STORAGE_KEY_DB = 'win11_pro_database_v1';
+    const STORAGE_KEY_SESSION = 'win11_pro_session_v1';
+
+    // Default database structure (mirrors GitHub `database/` folder: accounts.json & link.txt)
+    let DatabaseState = {
+      accounts: {}, // keyed by msEmail
+      links: [
+        {
+          code: 'win11://share/welcome-video',
+          type: 'video',
+          title: 'Windows 11 Pro — Představení funkcí & OBS Studio',
+          author: 'Microsoft Czechia',
+          data: {
+            duration: '04:18',
+            views: '128 tis. zhlédnutí',
+            color: 'from-sky-600 to-indigo-800',
+            description: 'Ukázkové sdílené video uložené v database/link.txt.'
+          }
+        },
+        {
+          code: 'win11://share/demo-kalkulacka',
+          type: 'exe',
+          title: 'RychlaKalkulacka.exe',
+          author: 'DevStudio',
+          data: {
+            icon: 'fa-calculator',
+            iconColor: '#38bdf8',
+            code: `<div style="font-family:Segoe UI,sans-serif;padding:20px;text-align:center;">
+  <h2 style="margin-bottom:10px;">⚡ Rychlá Kalkulačka (.exe)</h2>
+  <input id="cIn" placeholder="Zadejte příklad např. 25*4" style="padding:8px;border-radius:8px;border:1px solid #555;width:80%;background:#1e1e1e;color:#fff;"/>
+  <br/><button onclick="document.getElementById('cOut').innerText='Výsledek: '+eval(document.getElementById('cIn').value)" style="margin-top:10px;padding:8px 18px;border-radius:8px;background:#4cc2ff;border:none;font-weight:bold;cursor:pointer;">Spočítat</button>
+  <p id="cOut" style="margin-top:14px;font-size:18px;font-weight:bold;color:#4cc2ff;"></p>
+</div>`
+          }
+        }
+      ],
+      githubConfig: {
+        owner: '',
+        repo: '',
+        token: '',
+        branch: 'main'
+      }
+    };
+
+    // Active User Session & Profile Data
+    let SessionState = {
+      oobeCompleted: false,
+      isLoggedIn: false,
+      currentAccountEmail: null,
+      oobeDraft: {
+        region: 'Česko',
+        keyboard: 'Čeština (QWERTZ)',
+        msEmail: '',
+        msPassword: '',
+        localUsername: 'Uživatel',
+        localPassword: ''
+      }
+    };
+
+    // Default user environment template
+    function createDefaultUserProfile(email, localUsername, localPassword, region, keyboard) {
+      return {
+        email: email,
+        localUsername: localUsername || 'Uživatel',
+        localPassword: localPassword || '',
+        region: region || 'Česko',
+        keyboard: keyboard || 'Čeština (QWERTZ)',
+        theme: 'dark',
+        wallpaper: 'wallpaper-bloom-dark',
+        oneDriveMode: 'ask', // 'public' | 'local' | 'never' | 'ask'
+        files: [
+          {
+            id: 'file-readme',
+            name: 'Vítejte_ve_Windows11.txt',
+            folder: 'Plocha',
+            type: 'text',
+            icon: 'fa-file-lines',
+            color: '#60cdff',
+            visibility: 'public',
+            createdAt: new Date().toLocaleString('cs-CZ'),
+            content: 'Vítejte ve Windows 11 Pro WebOS simulátoru!\n\n- Všechny soubory, screenshoty z OBS Studia i zkompilované .exe aplikace z VS Code se ukládají přímo do tohoto virtuálního systému.\n- Pomocí tlačítka Sdílet můžete generovat odkazy do database/link.txt a otevírat je v aplikaci Odkazy.'
+          },
+          {
+            id: 'file-sample-note',
+            name: 'Poznamky_k_projektu.txt',
+            folder: 'Dokumenty',
+            type: 'text',
+            icon: 'fa-file-lines',
+            color: '#fbbf24',
+            visibility: 'local',
+            createdAt: new Date().toLocaleString('cs-CZ'),
+            content: 'Seznam úkolů:\n1. Otestovat OBS Studio nahrávání obrazovky\n2. Exportovat vlastní .exe aplikaci ve Visual Studio Code\n3. Vyzkoušet synchronizaci přes Microsoft účet'
+          }
+        ],
+        youtubeVideos: [
+          {
+            id: 'yt-1',
+            title: 'Windows 11 Pro — Kompletní prohlídka systému',
+            author: 'Windows CZ',
+            views: '45 tis. zhlédnutí',
+            duration: '08:42',
+            color: 'from-blue-600 to-cyan-700',
+            visibility: 'public',
+            description: 'Ukázka moderního rozhraní Windows 11 Pro, správy oken a cloudové synchronizace.'
+          },
+          {
+            id: 'yt-2',
+            title: 'Jak nahrávat obrazovku v OBS Studio bez sekání',
+            author: 'TechTutoriály CZ',
+            views: '19 tis. zhlédnutí',
+            duration: '05:15',
+            color: 'from-purple-600 to-pink-700',
+            visibility: 'public',
+            description: 'Návod na nastavení scén, mixéru zvuku a ukládání do lokální složky Videa.'
+          },
+          {
+            id: 'yt-3',
+            title: 'Tvorba vlastní .exe aplikace ve Visual Studio Code',
+            author: 'CodeMaster',
+            views: '31 tis. zhlédnutí',
+            duration: '06:30',
+            color: 'from-emerald-600 to-teal-800',
+            visibility: 'public',
+            description: 'Kompilace webového kódu do spustitelného balíčku na plochu.'
+          }
+        ]
+      };
+    }
+
+    function getCurrentUser() {
+      if (!SessionState.currentAccountEmail) return null;
+      return DatabaseState.accounts[SessionState.currentAccountEmail] || null;
+    }
+
+    // Load from LocalStorage & attempt GitHub database/ fetch
+    async function initDatabaseAndSession() {
+      try {
+        const savedDb = localStorage.getItem(STORAGE_KEY_DB);
+        if (savedDb) {
+          const parsed = JSON.parse(savedDb);
+          DatabaseState = { ...DatabaseState, ...parsed };
+        }
+        const savedSession = localStorage.getItem(STORAGE_KEY_SESSION);
+        if (savedSession) {
+          SessionState = { ...SessionState, ...JSON.parse(savedSession) };
+        }
+      } catch (e) {
+        console.warn('Chyba při načítání lokální cache:', e);
+      }
+
+      // Auto-detect GitHub Pages repository if hosted on *.github.io
+      if (!DatabaseState.githubConfig.owner && window.location.hostname.endsWith('.github.io')) {
+        const owner = window.location.hostname.split('.')[0];
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const repo = pathParts.length > 0 ? pathParts[0] : `${owner}.github.io`;
+        DatabaseState.githubConfig.owner = owner;
+        DatabaseState.githubConfig.repo = repo;
+      }
+
+      // Try to read public database/accounts.json and database/link.txt from GitHub if configured
+      await pullFromGitHubDatabase(true);
+    }
+
+    function saveSession() {
+      localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(SessionState));
+    }
+
+    async function persistDatabase(forcePublicSync = false) {
+      const user = getCurrentUser();
+      if (user && user.oneDriveMode === 'never' && !forcePublicSync) {
+        updateSyncIndicator('Režim: Neukládat', 'bg-amber-400');
+        return;
+      }
+
+      try {
+        localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(DatabaseState));
+        updateSyncIndicator('Uloženo (OneDrive & Cache)', 'bg-emerald-400');
+      } catch (e) {
+        console.error('Chyba ukládání do cache:', e);
+      }
+
+      // If GitHub Token + Owner + Repo are configured, push database/accounts.json & database/link.txt
+      if (DatabaseState.githubConfig.token && DatabaseState.githubConfig.owner && DatabaseState.githubConfig.repo) {
+        await pushToGitHubDatabase();
+      }
+    }
+
+    function updateSyncIndicator(text, dotClass) {
+      const lbl = document.getElementById('sync-status-label');
+      const dot = document.getElementById('sync-status-dot');
+      if (lbl) lbl.textContent = text;
+      if (dot) dot.className = `w-2 h-2 rounded-full ${dotClass}`;
+    }
+
+    // Format links as database/link.txt lines
+    function serializeLinkTxt() {
+      const header = '# Windows 11 Pro WebOS - Sdílené odkazy (database/link.txt)\n# Formát: ODKAZ | TYP | NAZEV | AUTOR | DATA_JSON\n';
+      const lines = DatabaseState.links.map(l => `${l.code} | ${l.type} | ${l.title} | ${l.author} | ${JSON.stringify(l.data)}`);
+      return header + lines.join('\n');
+    }
+
+    function parseLinkTxt(txtContent) {
+      const lines = txtContent.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+      const parsedLinks = [];
+      for (const line of lines) {
+        const parts = line.split('|').map(p => p.trim());
+        if (parts.length >= 5) {
+          try {
+            parsedLinks.push({
+              code: parts[0],
+              type: parts[1],
+              title: parts[2],
+              author: parts[3],
+              data: JSON.parse(parts.slice(4).join('|'))
+            });
+          } catch (e) { /* ignore malformed line */ }
+        }
+      }
+      return parsedLinks;
+    }
+
+    async function pullFromGitHubDatabase(silent = false) {
+      const { owner, repo, token, branch } = DatabaseState.githubConfig;
+      if (!owner || !repo) return;
+
+      const headers = { 'Accept': 'application/vnd.github.v3+json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      try {
+        // Fetch database/accounts.json
+        const accRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/database/accounts.json?ref=${branch || 'main'}`, { headers });
+        if (accRes.ok) {
+          const accJson = await accRes.json();
+          const decoded = decodeURIComponent(escape(atob(accJson.content.replace(/\n/g, ''))));
+          const remoteAccounts = JSON.parse(decoded);
+          DatabaseState.accounts = { ...DatabaseState.accounts, ...remoteAccounts };
+        }
+
+        // Fetch database/link.txt
+        const linkRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/database/link.txt?ref=${branch || 'main'}`, { headers });
+        if (linkRes.ok) {
+          const linkJson = await linkRes.json();
+          const decodedTxt = decodeURIComponent(escape(atob(linkJson.content.replace(/\n/g, ''))));
+          const remoteLinks = parseLinkTxt(decodedTxt);
+          // Merge unique links
+          const existingCodes = new Set(DatabaseState.links.map(l => l.code));
+          remoteLinks.forEach(rl => {
+            if (!existingCodes.has(rl.code)) DatabaseState.links.push(rl);
+          });
+        }
+
+        localStorage.setItem(STORAGE_KEY_DB, JSON.stringify(DatabaseState));
+        if (!silent) showToast('Synchronizace s GitHub database/ proběhla úspěšně!', 'success');
+      } catch (err) {
+        if (!silent) showToast('Nepodařilo se spojit s GitHub API (používám lokální database cache).', 'warning');
+      }
+    }
+
+    async function pushToGitHubDatabase() {
+      const { owner, repo, token, branch } = DatabaseState.githubConfig;
+      if (!owner || !repo || !token) return;
+
+      updateSyncIndicator('Synchronizuji s GitHub...', 'bg-sky-400 animate-ping');
+      const headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const uploadFile = async (path, rawText, message) => {
+        let sha = null;
+        const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch || 'main'}`, { headers });
+        if (getRes.ok) {
+          const existing = await getRes.json();
+          sha = existing.sha;
+        }
+        const encoded = btoa(unescape(encodeURIComponent(rawText)));
+        await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            message,
+            content: encoded,
+            branch: branch || 'main',
+            ...(sha ? { sha } : {})
+          })
+        });
+      };
+
+      try {
+        await uploadFile('database/accounts.json', JSON.stringify(DatabaseState.accounts, null, 2), 'Sync Windows 11 Pro accounts');
+        await uploadFile('database/link.txt', serializeLinkTxt(), 'Update shared links in link.txt');
+        updateSyncIndicator('GitHub database/ synchronizováno', 'bg-emerald-400');
+      } catch (e) {
+        updateSyncIndicator('GitHub Sync chyba (uloženo lokálně)', 'bg-amber-400');
+      }
+    }
+
+    /*************************************************************************
+     * 2. ONEDRIVE STORAGE POLICY ENGINE ("Pokaždé se zeptat")
+     *************************************************************************/
+    let pendingOneDriveCallback = null;
+
+    function requestStoragePermission(itemTitle, actionCallback) {
+      const user = getCurrentUser();
+      const mode = user ? user.oneDriveMode : 'ask';
+
+      if (mode === 'never') {
+        showToast(`Režim „Neukládat“: Položka „${itemTitle}“ nebyla trvale uložena.`, 'warning');
+        return;
+      }
+      if (mode === 'public') {
+        actionCallback('public');
+        return;
+      }
+      if (mode === 'local') {
+        actionCallback('local');
+        return;
+      }
+
+      // Mode === 'ask': show Windows 11 OneDrive dialog
+      pendingOneDriveCallback = actionCallback;
+      document.getElementById('onedrive-prompt-filename').textContent = `Položka: ${itemTitle}`;
+      const modal = document.getElementById('onedrive-prompt-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function resolveOneDrivePrompt(choice) {
+      const modal = document.getElementById('onedrive-prompt-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      if (choice !== 'cancel' && pendingOneDriveCallback) {
+        pendingOneDriveCallback(choice);
+      }
+      pendingOneDriveCallback = null;
+    }
+
+    /*************************************************************************
+     * 3. OOBE SETUP WIZARD & LOGIN / LOADING SCREENS
+     *************************************************************************/
+    let currentOobeStep = 1;
+    let oobeAuthMode = 'login'; // 'login' | 'register'
+
+    function renderOobeStep() {
+      const content = document.getElementById('oobe-step-content');
+      const stepInd = document.getElementById('oobe-step-indicator');
+      const progBar = document.getElementById('oobe-progress-bar');
+      const backBtn = document.getElementById('oobe-back-btn');
+      const nextBtn = document.getElementById('oobe-next-btn');
+      const heroIcon = document.getElementById('oobe-hero-icon');
+      const heroCaption = document.getElementById('oobe-hero-caption');
+
+      stepInd.textContent = `Krok ${currentOobeStep} z 4`;
+      progBar.style.width = `${currentOobeStep * 25}%`;
+      backBtn.classList.toggle('hidden', currentOobeStep === 1);
+
+      if (currentOobeStep === 1) {
+        heroIcon.className = 'fa-solid fa-earth-europe text-5xl text-[#4cc2ff]';
+        heroCaption.textContent = 'Výběr země nebo oblasti';
+        nextBtn.textContent = 'Ano, pokračovat';
+        const regions = ['Česko', 'Slovensko', 'Spojené státy (USA)', 'Německo', 'Polsko', 'Spojené království'];
+        content.innerHTML = `
+          <h2 class="text-2xl font-semibold">Je tato země nebo oblast správná?</h2>
+          <p class="text-xs text-white/70">Toto nastavení určí formát data, času a regionální služby Windows 11 Pro.</p>
+          <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1 pt-2">
+            ${regions.map(r => `
+              <div onclick="SessionState.oobeDraft.region='${r}'; renderOobeStep()" class="p-3 rounded-xl border cursor-pointer flex items-center justify-between transition ${SessionState.oobeDraft.region === r ? 'bg-[#4cc2ff]/20 border-[#4cc2ff]' : 'bg-white/5 border-white/10 hover:bg-white/10'}">
+                <span class="text-sm font-medium">${r}</span>
+                ${SessionState.oobeDraft.region === r ? '<i class="fa-solid fa-circle-check text-[#4cc2ff]"></i>' : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (currentOobeStep === 2) {
+        heroIcon.className = 'fa-solid fa-keyboard text-5xl text-[#4cc2ff]';
+        heroCaption.textContent = 'Jazyk a rozložení klávesnice';
+        nextBtn.textContent = 'Ano, pokračovat';
+        const keyboards = ['Čeština (QWERTZ)', 'Čeština (QWERTY)', 'Slovenčina (QWERTZ)', 'Angličtina (US)', 'Němčina (QWERTZ)'];
+        content.innerHTML = `
+          <h2 class="text-2xl font-semibold">Je toto správné rozložení klávesnice?</h2>
+          <p class="text-xs text-white/70">Jazyk systému: <strong>Čeština (Česká republika)</strong>. Zvolte preferované rozložení kláves.</p>
+          <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1 pt-2">
+            ${keyboards.map(k => `
+              <div onclick="SessionState.oobeDraft.keyboard='${k}'; renderOobeStep()" class="p-3 rounded-xl border cursor-pointer flex items-center justify-between transition ${SessionState.oobeDraft.keyboard === k ? 'bg-[#4cc2ff]/20 border-[#4cc2ff]' : 'bg-white/5 border-white/10 hover:bg-white/10'}">
+                <span class="text-sm font-medium">${k}</span>
+                ${SessionState.oobeDraft.keyboard === k ? '<i class="fa-solid fa-circle-check text-[#4cc2ff]"></i>' : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (currentOobeStep === 3) {
+        heroIcon.className = 'fa-brands fa-microsoft text-5xl text-[#4cc2ff]';
+        heroCaption.textContent = 'Synchronizace Microsoft účtu s database/';
+        nextBtn.textContent = 'Pokračovat s účtem';
+        const existingEmails = Object.keys(DatabaseState.accounts);
+        content.innerHTML = `
+          <h2 class="text-2xl font-semibold">Přidejte svůj Microsoft účet</h2>
+          <p class="text-xs text-white/70">Přihlaste se nebo si vytvořte účet. Všechny vaše aplikace, soubory a nastavení se uloží do <code>database/</code> a budou stejné na všech zařízeních.</p>
+
+          <div class="flex gap-2 p-1 bg-black/30 rounded-xl border border-white/10">
+            <button onclick="oobeAuthMode='login'; renderOobeStep()" class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition ${oobeAuthMode==='login' ? 'bg-[#4cc2ff] text-black' : 'text-white/70'}">Přihlásit se</button>
+            <button onclick="oobeAuthMode='register'; renderOobeStep()" class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition ${oobeAuthMode==='register' ? 'bg-[#4cc2ff] text-black' : 'text-white/70'}">Vytvořit nový účet</button>
+          </div>
+
+          <div class="space-y-3 pt-1">
+            <div>
+              <label class="block text-xs text-white/75 mb-1">E-mail Microsoft účtu</label>
+              <input id="oobe-ms-email" type="email" value="${SessionState.oobeDraft.msEmail}" oninput="SessionState.oobeDraft.msEmail=this.value" placeholder="jmeno@outlook.cz" class="w-full px-3.5 py-2.5 rounded-xl bg-black/35 border border-white/15 focus:border-[#4cc2ff] outline-none text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-white/75 mb-1">Heslo k Microsoft účtu</label>
+              <input id="oobe-ms-pass" type="password" value="${SessionState.oobeDraft.msPassword}" oninput="SessionState.oobeDraft.msPassword=this.value" placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl bg-black/35 border border-white/15 focus:border-[#4cc2ff] outline-none text-sm" />
+            </div>
+            ${existingEmails.length > 0 ? `
+              <div class="pt-1">
+                <span class="text-[11px] text-white/60 block mb-1">Nalezené účty v databázi (kliknutím vyberte):</span>
+                <div class="flex flex-wrap gap-1.5">
+                  ${existingEmails.map(em => `<button onclick="SessionState.oobeDraft.msEmail='${em}'; renderOobeStep()" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px]">${em}</button>`).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      } else if (currentOobeStep === 4) {
+        heroIcon.className = 'fa-solid fa-user-shield text-5xl text-[#4cc2ff]';
+        heroCaption.textContent = 'Lokální profil tohoto zařízení';
+        nextBtn.textContent = 'Dokončit nastavení';
+        content.innerHTML = `
+          <h2 class="text-2xl font-semibold">Vytvořte si lokální profil</h2>
+          <p class="text-xs text-white/70">Zadejte jméno, které se zobrazí na přihlašovací obrazovce Windows 11. Heslo pro rychlé odemčení je nepovinné.</p>
+          <div class="space-y-3 pt-2">
+            <div>
+              <label class="block text-xs text-white/75 mb-1">Uživatelské jméno *</label>
+              <input id="oobe-local-user" type="text" value="${SessionState.oobeDraft.localUsername}" oninput="SessionState.oobeDraft.localUsername=this.value" placeholder="Např. Jan Novák" class="w-full px-3.5 py-2.5 rounded-xl bg-black/35 border border-white/15 focus:border-[#4cc2ff] outline-none text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-white/75 mb-1">Heslo k simulátoru (nepovinné)</label>
+              <input id="oobe-local-pass" type="password" value="${SessionState.oobeDraft.localPassword}" oninput="SessionState.oobeDraft.localPassword=this.value" placeholder="Ponechte prázdné pro přihlášení bez hesla" class="w-full px-3.5 py-2.5 rounded-xl bg-black/35 border border-white/15 focus:border-[#4cc2ff] outline-none text-sm" />
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function oobePrevStep() {
+      if (currentOobeStep > 1) {
+        currentOobeStep--;
+        renderOobeStep();
+      }
+    }
+
+    async function oobeNextStep() {
+      if (currentOobeStep === 3) {
+        const email = (SessionState.oobeDraft.msEmail || '').trim().toLowerCase();
+        if (!email || !email.includes('@')) {
+          showToast('Zadejte prosím platný e-mail Microsoft účtu (např. uzivatel@outlook.cz).', 'warning');
+          return;
+        }
+        SessionState.oobeDraft.msEmail = email;
+        if (DatabaseState.accounts[email]) {
+          // Pre-fill local username if account already exists in database
+          SessionState.oobeDraft.localUsername = DatabaseState.accounts[email].localUsername;
+        }
+      }
+
+      if (currentOobeStep < 4) {
+        currentOobeStep++;
+        renderOobeStep();
+      } else {
+        // Complete OOBE Setup
+        const localUser = (SessionState.oobeDraft.localUsername || '').trim();
+        if (!localUser) {
+          showToast('Zadejte prosím uživatelské jméno.', 'warning');
+          return;
+        }
+
+        const email = SessionState.oobeDraft.msEmail || 'uzivatel@outlook.cz';
+        if (!DatabaseState.accounts[email]) {
+          DatabaseState.accounts[email] = createDefaultUserProfile(
+            email,
+            localUser,
+            SessionState.oobeDraft.localPassword,
+            SessionState.oobeDraft.region,
+            SessionState.oobeDraft.keyboard
+          );
+        } else {
+          // Update local profile details while preserving synced apps/files
+          DatabaseState.accounts[email].localUsername = localUser;
+          DatabaseState.accounts[email].localPassword = SessionState.oobeDraft.localPassword;
+          DatabaseState.accounts[email].region = SessionState.oobeDraft.region;
+          DatabaseState.accounts[email].keyboard = SessionState.oobeDraft.keyboard;
+        }
+
+        SessionState.oobeCompleted = true;
+        SessionState.currentAccountEmail = email;
+        SessionState.isLoggedIn = true;
+        saveSession();
+        await persistDatabase(true);
+
+        document.getElementById('oobe-screen').classList.add('hidden');
+        showFullscreenLoader(
+          'Vše pro vás připravujeme...',
+          'Může to trvat několik minut. Nevypínejte počítač.',
+          3600,
+          () => {
+            applyUserEnvironment();
+          }
+        );
+      }
+    }
+
+    async function skipOobeDemo() {
+      const demoEmail = 'demo@outlook.cz';
+      if (!DatabaseState.accounts[demoEmail]) {
+        DatabaseState.accounts[demoEmail] = createDefaultUserProfile(demoEmail, 'Demo Uživatel', '', 'Česko', 'Čeština (QWERTZ)');
+      }
+      SessionState.oobeCompleted = true;
+      SessionState.currentAccountEmail = demoEmail;
+      SessionState.isLoggedIn = true;
+      saveSession();
+      await persistDatabase(true);
+
+      document.getElementById('oobe-screen').classList.add('hidden');
+      showFullscreenLoader(
+        'Vše pro vás připravujeme...',
+        'Dokončujeme nastavení vašeho prostředí Windows 11 Pro...',
+        2200,
+        () => applyUserEnvironment()
+      );
+    }
+
+    function showFullscreenLoader(title, subtitle, durationMs, onDone) {
+      const loader = document.getElementById('fullscreen-loader');
+      document.getElementById('loader-title').textContent = title;
+      document.getElementById('loader-subtitle').textContent = subtitle;
+      loader.classList.remove('hidden');
+      loader.classList.add('flex');
+
+      setTimeout(() => {
+        loader.classList.add('hidden');
+        loader.classList.remove('flex');
+        if (onDone) onDone();
+      }, durationMs);
+    }
+
+    /* Lock Screen & Login Logic */
+    function openLockScreen(directToLogin = false) {
+      const lock = document.getElementById('lock-screen');
+      const user = getCurrentUser();
+      lock.classList.remove('hidden');
+      lock.classList.add('flex');
+
+      if (user) {
+        document.getElementById('login-username-display').textContent = user.localUsername;
+        document.getElementById('login-ms-email-display').textContent = user.email;
+        document.getElementById('login-avatar-initials').textContent = user.localUsername.charAt(0).toUpperCase();
+
+        const hasPass = user.localPassword && user.localPassword.length > 0;
+        document.getElementById('login-password-box').classList.toggle('hidden', !hasPass);
+        document.getElementById('login-nopass-btn').classList.toggle('hidden', hasPass);
+        document.getElementById('login-password-input').value = '';
+        document.getElementById('login-error-msg').classList.add('hidden');
+      }
+
+      if (directToLogin) {
+        showLoginForm();
+      } else {
+        document.getElementById('lock-clock-view').classList.remove('hidden');
+        document.getElementById('lock-login-view').classList.add('hidden');
+        document.getElementById('lock-blur-overlay').classList.remove('backdrop-blur-xl', 'bg-black/40');
+      }
+    }
+
+    function showLoginForm() {
+      document.getElementById('lock-clock-view').classList.add('hidden');
+      document.getElementById('lock-login-view').classList.remove('hidden');
+      document.getElementById('lock-login-view').classList.add('flex');
+      document.getElementById('lock-blur-overlay').classList.add('backdrop-blur-xl', 'bg-black/40');
+      const passInput = document.getElementById('login-password-input');
+      if (!passInput.parentElement.parentElement.classList.contains('hidden')) {
+        setTimeout(() => passInput.focus(), 100);
+      }
+    }
+
+    function handleLoginSubmit() {
+      const user = getCurrentUser();
+      if (!user) return;
+      if (user.localPassword && user.localPassword.length > 0) {
+        const entered = document.getElementById('login-password-input').value;
+        if (entered !== user.localPassword) {
+          document.getElementById('login-error-msg').classList.remove('hidden');
+          return;
+        }
+      }
+
+      document.getElementById('lock-screen').classList.add('hidden');
+      document.getElementById('lock-screen').classList.remove('flex');
+      SessionState.isLoggedIn = true;
+      saveSession();
+
+      showFullscreenLoader('Vítejte', `${user.localUsername} • Synchronizuji profil...`, 1700, () => {
+        applyUserEnvironment();
+      });
+    }
+
+    function lockComputer() {
+      hideAllPopups();
+      openLockScreen(false);
+    }
+
+    function signOutUser() {
+      hideAllPopups();
+      SessionState.isLoggedIn = false;
+      saveSession();
+      openLockScreen(true);
+    }
+
+    function restartSystem() {
+      hideAllPopups();
+      showFullscreenLoader('Restartování...', 'Ukládám relaci Windows 11 Pro', 1800, () => {
+        openLockScreen(false);
+      });
+    }
+
+    function resetToOobe() {
+      document.getElementById('lock-screen').classList.add('hidden');
+      currentOobeStep = 1;
+      SessionState.oobeCompleted = false;
+      saveSession();
+      document.getElementById('oobe-screen').classList.remove('hidden');
+      renderOobeStep();
+    }
+
+    function switchAccountModal() {
+      const emails = Object.keys(DatabaseState.accounts);
+      if (emails.length <= 1) {
+        showToast('V databázi je zatím pouze jeden účet. Nový vytvoříte přes OOBE Setup nebo v Nastavení -> Účty.', 'info');
+        return;
+      }
+      const nextIdx = (emails.indexOf(SessionState.currentAccountEmail) + 1) % emails.length;
+      SessionState.currentAccountEmail = emails[nextIdx];
+      saveSession();
+      openLockScreen(true);
+      showToast(`Přepnuto na účet ${SessionState.currentAccountEmail}`, 'info');
+    }
+
+    /*************************************************************************
+     * 4. DESKTOP, WALLPAPER, THEME & WINDOW MANAGER
+     *************************************************************************/
+    let openWindows = [];
+    let zIndexCounter = 100;
+    let activeWindowId = null;
+
+    const BUILTIN_APPS = [
+      { id: 'explorer', name: 'Průzkumník souborů', icon: 'fa-folder-open', color: '#fbbf24', pinned: true },
+      { id: 'obs', name: 'OBS Studio', icon: 'fa-compact-disc', color: '#f43f5e', pinned: true },
+      { id: 'vscode', name: 'Visual Studio Code', icon: 'fa-code', color: '#38bdf8', pinned: true },
+      { id: 'youtube', name: 'YouTube', icon: 'fa-brands fa-youtube', color: '#ef4444', pinned: true },
+      { id: 'links', name: 'Odkazy (Link Opener)', icon: 'fa-link', color: '#10b981', pinned: true },
+      { id: 'edge', name: 'Microsoft Edge', icon: 'fa-brands fa-edge', color: '#0ea5e9', pinned: true },
+      { id: 'terminal', name: 'Terminál', icon: 'fa-terminal', color: '#a3e635', pinned: true },
+      { id: 'notepad', name: 'Poznámkový blok', icon: 'fa-file-lines', color: '#60a5fa', pinned: true },
+      { id: 'paint', name: 'Malování', icon: 'fa-palette', color: '#c084fc', pinned: false },
+      { id: 'calculator', name: 'Kalkulačka', icon: 'fa-calculator', color: '#2dd4bf', pinned: false },
+      { id: 'taskmgr', name: 'Správce úloh', icon: 'fa-chart-line', color: '#fb923c', pinned: false },
+      { id: 'settings', name: 'Nastavení', icon: 'fa-gear', color: '#94a3b8', pinned: true }
+    ];
+
+    function applyUserEnvironment() {
+      const user = getCurrentUser();
+      if (!user) return;
+
+      // Apply theme
+      document.body.classList.toggle('dark-theme', user.theme === 'dark');
+
+      // Apply wallpaper
+      const desk = document.getElementById('desktop-environment');
+      desk.classList.remove('wallpaper-bloom-dark', 'wallpaper-bloom-light', 'wallpaper-sunset', 'wallpaper-emerald');
+      desk.classList.add(user.wallpaper || 'wallpaper-bloom-dark');
+
+      // Update Start menu & Widgets user info
+      document.getElementById('start-user-name').textContent = user.localUsername;
+      document.getElementById('start-user-email').textContent = user.email;
+      document.getElementById('start-user-avatar').textContent = user.localUsername.charAt(0).toUpperCase();
+
+      const modeLabels = {
+        public: 'Sdílený OneDrive (veřejně)',
+        local: 'Lokálně (cache)',
+        never: 'Neukládat',
+        ask: 'Pokaždé se zeptat'
+      };
+      document.getElementById('widget-storage-mode').textContent = modeLabels[user.oneDriveMode] || 'Pokaždé se zeptat';
+      document.getElementById('widget-files-count').textContent = `Soubory: ${user.files.length}`;
+      document.getElementById('widget-links-count').textContent = `Sdílené odkazy: ${DatabaseState.links.length}`;
+
+      renderDesktopIcons();
+      renderStartMenu();
+      renderTaskbar();
+    }
+
+    function renderDesktopIcons() {
+      const container = document.getElementById('desktop-icons-container');
+      const user = getCurrentUser();
+      if (!container || !user) return;
+
+      // Core system desktop shortcuts
+      const coreShortcuts = [
+        { id: 'sc-pc', name: 'Tento počítač', icon: 'fa-desktop', color: '#38bdf8', action: () => openApp('explorer', { folder: 'Tento počítač' }) },
+        { id: 'sc-obs', name: 'OBS Studio', icon: 'fa-compact-disc', color: '#f43f5e', action: () => openApp('obs') },
+        { id: 'sc-vscode', name: 'VS Code', icon: 'fa-code', color: '#38bdf8', action: () => openApp('vscode') },
+        { id: 'sc-youtube', name: 'YouTube', icon: 'fa-brands fa-youtube', color: '#ef4444', action: () => openApp('youtube') },
+        { id: 'sc-links', name: 'Odkazy (Link.txt)', icon: 'fa-link', color: '#10b981', action: () => openApp('links') },
+        { id: 'sc-settings', name: 'Nastavení', icon: 'fa-gear', color: '#94a3b8', action: () => openApp('settings') }
+      ];
+
+      // Files & Compiled .exe apps located on 'Plocha'
+      const desktopFiles = user.files.filter(f => f.folder === 'Plocha');
+
+      container.innerHTML = '';
+
+      coreShortcuts.forEach(sc => {
+        const el = document.createElement('div');
+        el.className = 'desktop-icon';
+        el.innerHTML = `
+          <div class="w-11 h-11 rounded-xl bg-black/35 backdrop-blur-md border border-white/15 flex items-center justify-center shadow-md">
+            <i class="${sc.icon.startsWith('fa-brands') ? sc.icon : 'fa-solid ' + sc.icon} text-2xl" style="color:${sc.color}"></i>
+          </div>
+          <span>${sc.name}</span>
+        `;
+        el.ondblclick = sc.action;
+        el.onclick = (e) => {
+          e.stopPropagation();
+          document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+          el.classList.add('selected');
+        };
+        container.appendChild(el);
+      });
+
+      desktopFiles.forEach(file => {
+        const el = document.createElement('div');
+        el.className = 'desktop-icon';
+        const isExe = file.type === 'exe';
+        el.innerHTML = `
+          <div class="relative w-11 h-11 rounded-xl ${isExe ? 'bg-gradient-to-br from-sky-500/40 to-indigo-600/40 border-[#4cc2ff]/50' : 'bg-black/35 border-white/15'} backdrop-blur-md border flex items-center justify-center shadow-md">
+            <i class="fa-solid ${file.icon || 'fa-file'} text-2xl" style="color:${file.color || '#60cdff'}"></i>
+            ${isExe ? '<span class="absolute -bottom-1 -right-1 px-1 rounded bg-[#4cc2ff] text-black text-[8px] font-bold">EXE</span>' : ''}
+          </div>
+          <span>${file.name}</span>
+        `;
+        el.ondblclick = () => openVirtualFile(file);
+        el.onclick = (e) => {
+          e.stopPropagation();
+          document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+          el.classList.add('selected');
+        };
+        container.appendChild(el);
+      });
+    }
+
+    function renderStartMenu(filter = '') {
+      const grid = document.getElementById('start-pinned-grid');
+      const recList = document.getElementById('start-recommended-list');
+      const user = getCurrentUser();
+      if (!grid || !user) return;
+
+      const filteredApps = BUILTIN_APPS.filter(a => a.name.toLowerCase().includes(filter.toLowerCase()));
+      grid.innerHTML = filteredApps.map(app => `
+        <button onclick="openApp('${app.id}'); hideAllPopups()" class="p-2.5 rounded-xl hover:bg-white/10 flex flex-col items-center text-center gap-1.5 transition">
+          <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+            <i class="${app.icon.startsWith('fa-brands') ? app.icon : 'fa-solid ' + app.icon} text-lg" style="color:${app.color}"></i>
+          </div>
+          <span class="text-[11px] leading-tight line-clamp-1">${app.name}</span>
+        </button>
+      `).join('');
+
+      const recentFiles = user.files.slice(-4).reverse();
+      recList.innerHTML = recentFiles.map(f => `
+        <button onclick="openVirtualFileById('${f.id}'); hideAllPopups()" class="p-2 rounded-lg hover:bg-white/10 flex items-center gap-2.5 text-left transition">
+          <i class="fa-solid ${f.icon || 'fa-file'} text-base" style="color:${f.color || '#60cdff'}"></i>
+          <div class="min-w-0 flex-1">
+            <div class="text-xs font-medium truncate">${f.name}</div>
+            <div class="text-[10px] opacity-60">${f.folder} • ${f.visibility === 'public' ? 'OneDrive' : 'Lokální'}</div>
+          </div>
+        </button>
+      `).join('');
+    }
+
+    function filterStartApps(val) {
+      renderStartMenu(val);
+    }
+
+    function renderTaskbar() {
+      const container = document.getElementById('taskbar-apps');
+      if (!container) return;
+
+      const pinnedIds = BUILTIN_APPS.filter(a => a.pinned).map(a => a.id);
+      const openAppIds = openWindows.map(w => w.appId);
+      const allIds = Array.from(new Set([...pinnedIds, ...openAppIds]));
+
+      container.innerHTML = allIds.map(id => {
+        const meta = BUILTIN_APPS.find(a => a.id === id) || { id, name: id, icon: 'fa-window-maximize', color: '#4cc2ff' };
+        const winInstances = openWindows.filter(w => w.appId === id);
+        const isOpen = winInstances.length > 0;
+        const isActive = winInstances.some(w => w.id === activeWindowId && !w.minimized);
+
+        return `
+          <button onclick="handleTaskbarAppClick('${id}')" title="${meta.name}" class="taskbar-item ${isOpen ? 'open' : ''} ${isActive ? 'active' : ''}">
+            <i class="${meta.icon.startsWith('fa-brands') ? meta.icon : 'fa-solid ' + meta.icon} text-lg" style="color:${meta.color}"></i>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function handleTaskbarAppClick(appId) {
+      const existing = openWindows.find(w => w.appId === appId);
+      if (!existing) {
+        openApp(appId);
+      } else if (existing.minimized) {
+        existing.minimized = false;
+        focusWindow(existing.id);
+      } else if (activeWindowId === existing.id) {
+        minimizeWindow(existing.id);
+      } else {
+        focusWindow(existing.id);
+      }
+    }
+
+    /* Window Creation, Dragging, Snapping, Focus */
+    function openApp(appId, params = {}) {
+      hideAllPopups();
+
+      // Reuse single-instance system apps if already open
+      const singleInstanceApps = ['settings', 'obs', 'taskmgr', 'links'];
+      if (singleInstanceApps.includes(appId)) {
+        const existing = openWindows.find(w => w.appId === appId);
+        if (existing) {
+          existing.minimized = false;
+          existing.params = { ...existing.params, ...params };
+          focusWindow(existing.id);
+          refreshWindowContent(existing.id);
+          return existing.id;
+        }
+      }
+
+      const meta = BUILTIN_APPS.find(a => a.id === appId) || {
+        id: appId,
+        name: params.title || 'Aplikace Windows',
+        icon: params.icon || 'fa-cube',
+        color: params.color || '#4cc2ff'
+      };
+
+      const winId = 'win-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+      const offset = (openWindows.length % 6) * 26;
+
+      const defaultSizes = {
+        obs: { w: 940, h: 610 },
+        vscode: { w: 920, h: 590 },
+        explorer: { w: 860, h: 540 },
+        youtube: { w: 900, h: 580 },
+        settings: { w: 840, h: 560 },
+        edge: { w: 880, h: 560 },
+        links: { w: 680, h: 490 },
+        calculator: { w: 340, h: 470 },
+        terminal: { w: 720, h: 440 },
+        notepad: { w: 640, h: 460 },
+        paint: { w: 780, h: 520 },
+        taskmgr: { w: 680, h: 480 },
+        custom_exe: { w: 560, h: 440 },
+        media_viewer: { w: 720, h: 500 }
+      };
+
+      const size = defaultSizes[appId] || { w: 740, h: 500 };
+      const maxW = window.innerWidth - 24;
+      const maxH = window.innerHeight - 64;
+
+      const winObj = {
+        id: winId,
+        appId,
+        title: params.title || meta.name,
+        icon: params.icon || meta.icon,
+        color: params.color || meta.color,
+        x: Math.max(12, Math.min(80 + offset, maxW - Math.min(size.w, maxW))),
+        y: Math.max(12, Math.min(40 + offset, maxH - Math.min(size.h, maxH))),
+        w: Math.min(size.w, maxW),
+        h: Math.min(size.h, maxH),
+        minimized: false,
+        maximized: window.innerWidth < 640,
+        zIndex: ++zIndexCounter,
+        params
+      };
+
+      openWindows.push(winObj);
+      mountWindowElement(winObj);
+      focusWindow(winId);
+      renderTaskbar();
+      return winId;
+    }
+
+    function mountWindowElement(winObj) {
+      const container = document.getElementById('windows-container');
+      const el = document.createElement('div');
+      el.id = winObj.id;
+      el.className = `win-window win-mica pointer-events-auto ${winObj.maximized ? 'maximized' : ''}`;
+      el.style.left = winObj.x + 'px';
+      el.style.top = winObj.y + 'px';
+      el.style.width = winObj.w + 'px';
+      el.style.height = winObj.h + 'px';
+      el.style.zIndex = winObj.zIndex;
+
+      el.onmousedown = () => focusWindow(winObj.id);
+
+      el.innerHTML = `
+        <div class="win-titlebar" onmousedown="startWindowDrag(event, '${winObj.id}')" ondblclick="toggleMaximizeWindow('${winObj.id}')">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <i class="${winObj.icon.startsWith('fa-brands') ? winObj.icon : 'fa-solid ' + winObj.icon} text-sm" style="color:${winObj.color}"></i>
+            <span class="text-xs font-medium truncate">${winObj.title}</span>
+          </div>
+          <div class="flex items-center relative" onmousedown="event.stopPropagation()">
+            <button onclick="minimizeWindow('${winObj.id}')" title="Minimalizovat" class="win-ctrl-btn">
+              <i class="fa-solid fa-minus text-[10px]"></i>
+            </button>
+            <div class="maximize-wrapper relative">
+              <button onclick="toggleMaximizeWindow('${winObj.id}')" title="Maximalizovat / Přichytit" class="win-ctrl-btn">
+                <i class="fa-regular fa-square text-[10px]"></i>
+              </button>
+              <div class="snap-popup win-mica shadow-xl">
+                <button onclick="snapWindow('${winObj.id}', 'left')" title="Přichytit vlevo" class="h-10 rounded border border-white/25 hover:bg-[#4cc2ff]/30 flex overflow-hidden">
+                  <div class="w-1/2 bg-[#4cc2ff]/60 h-full"></div>
+                </button>
+                <button onclick="snapWindow('${winObj.id}', 'right')" title="Přichytit vpravo" class="h-10 rounded border border-white/25 hover:bg-[#4cc2ff]/30 flex justify-end overflow-hidden">
+                  <div class="w-1/2 bg-[#4cc2ff]/60 h-full"></div>
+                </button>
+              </div>
+            </div>
+            <button onclick="closeWindow('${winObj.id}')" title="Zavřít" class="win-ctrl-btn close">
+              <i class="fa-solid fa-xmark text-xs"></i>
+            </button>
+          </div>
+        </div>
+        <div id="${winObj.id}-body" class="flex-1 overflow-auto relative"></div>
+      `;
+
+      container.appendChild(el);
+      refreshWindowContent(winObj.id);
+    }
+
+    function refreshWindowContent(winId) {
+      const winObj = openWindows.find(w => w.id === winId);
+      if (!winObj) return;
+      const body = document.getElementById(`${winId}-body`);
+      if (!body) return;
+
+      switch (winObj.appId) {
+        case 'obs': renderObsApp(body, winObj); break;
+        case 'vscode': renderVsCodeApp(body, winObj); break;
+        case 'explorer': renderExplorerApp(body, winObj); break;
+        case 'youtube': renderYoutubeApp(body, winObj); break;
+        case 'links': renderLinksApp(body, winObj); break;
+        case 'settings': renderSettingsApp(body, winObj); break;
+        case 'terminal': renderTerminalApp(body, winObj); break;
+        case 'notepad': renderNotepadApp(body, winObj); break;
+        case 'edge': renderEdgeApp(body, winObj); break;
+        case 'calculator': renderCalculatorApp(body, winObj); break;
+        case 'paint': renderPaintApp(body, winObj); break;
+        case 'taskmgr': renderTaskMgrApp(body, winObj); break;
+        case 'custom_exe': renderCustomExeApp(body, winObj); break;
+        case 'media_viewer': renderMediaViewerApp(body, winObj); break;
+        default: body.innerHTML = `<div class="p-6 text-sm">Aplikace ${winObj.title}</div>`;
+      }
+    }
+
+    function focusWindow(winId) {
+      const winObj = openWindows.find(w => w.id === winId);
+      if (!winObj) return;
+      winObj.zIndex = ++zIndexCounter;
+      activeWindowId = winId;
+      const el = document.getElementById(winId);
+      if (el) {
+        el.style.zIndex = winObj.zIndex;
+        el.classList.remove('minimized');
+      }
+      renderTaskbar();
+    }
+
+    function minimizeWindow(winId) {
+      const winObj = openWindows.find(w => w.id === winId);
+      if (!winObj) return;
+      winObj.minimized = true;
+      const el = document.getElementById(winId);
+      if (el) el.classList.add('minimized');
+      if (activeWindowId === winId) activeWindowId = null;
+      renderTaskbar();
+    }
+
+    function minimizeAllWindows() {
+      openWindows.forEach(w => {
+        w.minimized = true;
+        const el = document.getElementById(w.id);
+        if (el) el.classList.add('minimized');
+      });
+      activeWindowId = null;
+      renderTaskbar();
+    }
+
+    function toggleMaximizeWindow(winId) {
+      const winObj = openWindows.find(w => w.id === winId);
+      if (!winObj) return;
+      winObj.maximized = !winObj.maximized;
+      const el = document.getElementById(winId);
+      if (el) el.classList.toggle('maximized', winObj.maximized);
+    }
+
+    function snapWindow(winId, side) {
+      const winObj = openWindows.find(w => w.id === winId);
+      if (!winObj) return;
+      winObj.maximized = false;
+      const el = document.getElementById(winId);
+      if (!el) return;
+      el.classList.remove('maximized');
+      const halfW = Math.floor(window.innerWidth / 2);
+      const fullH = window.innerHeight - 48;
+      winObj.x = side === 'left' ? 0 : halfW;
+      winObj.y = 0;
+      winObj.w = halfW;
+      winObj.h = fullH;
+      el.style.left = winObj.x + 'px';
+      el.style.top = winObj.y + 'px';
+      el.style.width = winObj.w + 'px';
+      el.style.height = winObj.h + 'px';
+    }
+
+    function closeWindow(winId) {
+      if (obsState.isRecording && openWindows.find(w => w.id === winId)?.appId === 'obs') {
+        stopObsRecording();
+      }
+      openWindows = openWindows.filter(w => w.id !== winId);
+      const el = document.getElementById(winId);
+      if (el) el.remove();
+      if (activeWindowId === winId) activeWindowId = null;
+      renderTaskbar();
+    }
+
+    function startWindowDrag(e, winId) {
+      const winObj = openWindows.find(w => w.id === winId);
+      if (!winObj || winObj.maximized) return;
+      focusWindow(winId);
+      const startX = e.clientX - winObj.x;
+      const startY = e.clientY - winObj.y;
+      const el = document.getElementById(winId);
+
+      const onMove = (moveEvent) => {
+        winObj.x = Math.max(-winObj.w + 100, Math.min(window.innerWidth - 100, moveEvent.clientX - startX));
+        winObj.y = Math.max(0, Math.min(window.innerHeight - 84, moveEvent.clientY - startY));
+        el.style.left = winObj.x + 'px';
+        el.style.top = winObj.y + 'px';
+      };
+
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    }
+
+    /*************************************************************************
+     * 5. ENHANCED OBS STUDIO (Saves Screenshots & Recordings to Simulator FS)
+     *************************************************************************/
+    let obsState = {
+      activeScene: 'Hlavní scéna (Plocha)',
+      isRecording: false,
+      recordSeconds: 0,
+      recordInterval: null,
+      micMuted: false,
+      desktopAudioMuted: false,
+      selectedSource: 'Zachytávání obrazovky (Windows 11)'
+    };
+
+    function renderObsApp(container, winObj) {
+      const user = getCurrentUser();
+      const recentCaptures = user ? user.files.filter(f => f.folder === 'Obrázky' || f.folder === 'Videa').slice(-4).reverse() : [];
+
+      container.innerHTML = `
+        <div class="h-full flex flex-col bg-[#18181b] text-zinc-100 select-none">
+          <!-- OBS Top Menu Bar -->
+          <div class="px-3 py-1.5 bg-[#121215] border-b border-white/10 flex items-center justify-between text-[11px] text-zinc-400">
+            <div class="flex items-center gap-4">
+              <span class="font-semibold text-white flex items-center gap-1.5"><i class="fa-solid fa-compact-disc text-rose-500"></i> OBS Studio 30.2 Pro</span>
+              <span class="hover:text-white cursor-pointer">Soubor</span>
+              <span class="hover:text-white cursor-pointer">Úpravy</span>
+              <span class="hover:text-white cursor-pointer">Zobrazení</span>
+              <span onclick="openApp('explorer', {folder: 'Videa'})" class="text-[#4cc2ff] hover:underline cursor-pointer">Zobrazit nahrávky v simulátoru</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Ukládání: Soubory simulátoru</span>
+            </div>
+          </div>
+
+          <!-- Center Preview Canvas Area -->
+          <div class="flex-1 p-4 flex flex-col items-center justify-center bg-[#0f0f12] relative overflow-hidden">
+            <div class="w-full max-w-2xl aspect-video rounded-xl border-2 ${obsState.isRecording ? 'border-rose-500 shadow-[0_0_25px_rgba(244,63,94,0.35)]' : 'border-zinc-700'} bg-gradient-to-br from-[#0a192f] via-[#102a4c] to-[#030712] relative overflow-hidden flex flex-col justify-between p-4 shadow-2xl">
+              <!-- Live Simulated Desktop Preview inside OBS -->
+              <div class="flex items-center justify-between text-xs">
+                <span class="px-2.5 py-1 rounded-md bg-black/60 backdrop-blur border border-white/15 font-medium">
+                  <i class="fa-solid fa-display text-[#4cc2ff] mr-1.5"></i>${obsState.selectedSource}
+                </span>
+                ${obsState.isRecording ? `
+                  <span class="px-2.5 py-1 rounded-md bg-rose-600 text-white font-bold flex items-center gap-1.5 animate-pulse">
+                    <span class="w-2 h-2 rounded-full bg-white"></span> REC ${formatDuration(obsState.recordSeconds)}
+                  </span>
+                ` : `
+                  <span class="px-2.5 py-1 rounded-md bg-black/50 text-zinc-400">Připraveno k záznamu</span>
+                `}
+              </div>
+
+              <!-- Mini Live Desktop Mockup -->
+              <div class="my-auto mx-auto w-4/5 h-3/5 rounded-lg border border-white/20 bg-white/5 backdrop-blur-sm p-3 flex flex-col justify-between">
+                <div class="flex gap-2">
+                  <div class="w-7 h-7 rounded bg-amber-400/30 border border-amber-400/50 flex items-center justify-center text-[10px]"><i class="fa-solid fa-folder text-amber-300"></i></div>
+                  <div class="w-7 h-7 rounded bg-sky-400/30 border border-sky-400/50 flex items-center justify-center text-[10px]"><i class="fa-solid fa-code text-sky-300"></i></div>
+                  <div class="w-7 h-7 rounded bg-rose-400/30 border border-rose-400/50 flex items-center justify-center text-[10px]"><i class="fa-brands fa-youtube text-rose-400"></i></div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs font-semibold text-white/90">Živý náhled pracovní plochy Windows 11 Pro</div>
+                  <div class="text-[10px] text-white/60">1920 × 1080 • 60 FPS • NVENC H.264</div>
+                </div>
+                <div class="h-3 rounded bg-black/50 flex items-center justify-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#4cc2ff]"></span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-white/70">
+                <span>Scéna: ${obsState.activeScene}</span>
+                <span>Cíl: Tento počítač &rarr; Obrázky / Videa</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom OBS Studio Docks (Scenes, Sources, Audio Mixer, Controls) -->
+          <div class="h-56 bg-[#1e1e24] border-t border-white/10 grid grid-cols-1 md:grid-cols-12 gap-2 p-2.5 text-xs">
+            <!-- Dock 1: Scény -->
+            <div class="md:col-span-3 bg-[#141418] rounded-lg border border-white/10 flex flex-col overflow-hidden">
+              <div class="px-2.5 py-1.5 bg-white/5 font-semibold text-[11px] border-b border-white/10 flex justify-between">
+                <span>Scény</span>
+                <i class="fa-solid fa-layer-group text-zinc-400"></i>
+              </div>
+              <div class="p-1.5 space-y-1 flex-1 overflow-y-auto">
+                ${['Hlavní scéna (Plocha)', 'Herní záznam', 'Tutoriál + Webkamera'].map(sc => `
+                  <div onclick="obsState.activeScene='${sc}'; refreshWindowContent('${winObj.id}')" class="px-2.5 py-1.5 rounded cursor-pointer text-[11px] ${obsState.activeScene===sc ? 'bg-[#0078d4] text-white font-medium' : 'hover:bg-white/10 text-zinc-300'}">
+                    ${sc}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Dock 2: Zdroje -->
+            <div class="md:col-span-3 bg-[#141418] rounded-lg border border-white/10 flex flex-col overflow-hidden">
+              <div class="px-2.5 py-1.5 bg-white/5 font-semibold text-[11px] border-b border-white/10 flex justify-between">
+                <span>Zdroje</span>
+                <i class="fa-solid fa-eye text-zinc-400"></i>
+              </div>
+              <div class="p-1.5 space-y-1 flex-1 overflow-y-auto">
+                ${[
+                  { name: 'Zachytávání obrazovky (Windows 11)', icon: 'fa-display text-sky-400' },
+                  { name: 'Záznam okna aplikace', icon: 'fa-window-maximize text-amber-400' },
+                  { name: 'Zvukový vstup (Mikrofon)', icon: 'fa-microphone text-emerald-400' }
+                ].map(src => `
+                  <div onclick="obsState.selectedSource='${src.name}'; refreshWindowContent('${winObj.id}')" class="px-2 py-1.5 rounded cursor-pointer text-[11px] flex items-center gap-2 ${obsState.selectedSource===src.name ? 'bg-white/15 text-white' : 'hover:bg-white/5 text-zinc-400'}">
+                    <i class="fa-solid ${src.icon}"></i>
+                    <span class="truncate">${src.name}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Dock 3: Mixér zvuku -->
+            <div class="md:col-span-3 bg-[#141418] rounded-lg border border-white/10 flex flex-col overflow-hidden">
+              <div class="px-2.5 py-1.5 bg-white/5 font-semibold text-[11px] border-b border-white/10 flex justify-between">
+                <span>Mixér zvuku</span>
+                <i class="fa-solid fa-sliders text-zinc-400"></i>
+              </div>
+              <div class="p-2.5 space-y-3 flex-1 flex flex-col justify-center">
+                <div>
+                  <div class="flex justify-between text-[10px] mb-1">
+                    <span>Zvuk plochy</span>
+                    <button onclick="obsState.desktopAudioMuted=!obsState.desktopAudioMuted; refreshWindowContent('${winObj.id}')" class="text-zinc-400 hover:text-white">
+                      <i class="fa-solid ${obsState.desktopAudioMuted ? 'fa-volume-xmark text-rose-400' : 'fa-volume-high text-emerald-400'}"></i>
+                    </button>
+                  </div>
+                  <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div class="h-full ${obsState.desktopAudioMuted ? 'w-0' : 'obs-meter-fill'}"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-[10px] mb-1">
+                    <span>Mikrofon / Aux</span>
+                    <button onclick="obsState.micMuted=!obsState.micMuted; refreshWindowContent('${winObj.id}')" class="text-zinc-400 hover:text-white">
+                      <i class="fa-solid ${obsState.micMuted ? 'fa-microphone-slash text-rose-400' : 'fa-microphone text-emerald-400'}"></i>
+                    </button>
+                  </div>
+                  <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                    <div class="h-full ${obsState.micMuted ? 'w-0' : 'obs-meter-fill delayed'}"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dock 4: Ovládací prvky -->
+            <div class="md:col-span-3 bg-[#141418] rounded-lg border border-white/10 flex flex-col overflow-hidden">
+              <div class="px-2.5 py-1.5 bg-white/5 font-semibold text-[11px] border-b border-white/10">
+                Ovládací prvky
+              </div>
+              <div class="p-2 flex flex-col gap-1.5 justify-center flex-1">
+                <button onclick="toggleObsRecording('${winObj.id}')" class="w-full py-2 px-3 rounded-lg font-semibold text-[11px] flex items-center justify-center gap-2 transition ${obsState.isRecording ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-[#0078d4] hover:bg-[#1084d9] text-white'}">
+                  <i class="fa-solid ${obsState.isRecording ? 'fa-stop' : 'fa-circle'}"></i>
+                  <span>${obsState.isRecording ? 'Zastavit nahrávání' : 'Spustit nahrávání'}</span>
+                </button>
+                <button onclick="takeObsScreenshot()" class="w-full py-2 px-3 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white font-medium text-[11px] flex items-center justify-center gap-2 transition">
+                  <i class="fa-solid fa-camera text-amber-300"></i>
+                  <span>Pořídit snímek obrazovky</span>
+                </button>
+                <button onclick="openApp('explorer', {folder: 'Obrázky'})" class="w-full py-1.5 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 text-[10px] flex items-center justify-center gap-1.5 transition">
+                  <i class="fa-solid fa-folder-open text-amber-400"></i>
+                  <span>Otevřít složku záznamů (${recentCaptures.length})</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Bar -->
+          <div class="px-3 py-1 bg-[#121215] border-t border-white/10 flex items-center justify-between text-[10px] text-zinc-400">
+            <span>LIVE: ${obsState.isRecording ? '00:' + formatDuration(obsState.recordSeconds) : '00:00:00'} • REC: ${obsState.isRecording ? 'Aktivní' : 'Neaktivní'}</span>
+            <span>CPU: 3.4 % • 60.00 fps • Ukládání: Lokální soubory simulátoru</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function formatDuration(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function takeObsScreenshot() {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const fileName = `Snimek_obrazovky_${timestamp}.png`;
+
+      requestStoragePermission(fileName, async (visibilityChoice) => {
+        const user = getCurrentUser();
+        if (!user) return;
+
+        const newScreenshot = {
+          id: 'img-' + Date.now(),
+          name: fileName,
+          folder: 'Obrázky',
+          type: 'screenshot',
+          icon: 'fa-image',
+          color: '#38bdf8',
+          visibility: visibilityChoice,
+          createdAt: new Date().toLocaleString('cs-CZ'),
+          meta: {
+            resolution: '1920x1080',
+            scene: obsState.activeScene,
+            wallpaper: user.wallpaper,
+            openAppsCount: openWindows.length
+          }
+        };
+
+        user.files.push(newScreenshot);
+        await persistDatabase();
+        applyUserEnvironment();
+        showToast(`Snímek „${fileName}“ byl uložen do složky Obrázky v simulátoru!`, 'success');
+      });
+    }
+
+    function toggleObsRecording(winId) {
+      if (!obsState.isRecording) {
+        obsState.isRecording = true;
+        obsState.recordSeconds = 0;
+        obsState.recordInterval = setInterval(() => {
+          obsState.recordSeconds++;
+          const w = openWindows.find(win => win.appId === 'obs');
+          if (w) refreshWindowContent(w.id);
+        }, 1000);
+        showToast('OBS Studio: Nahrávání obrazovky spuštěno.', 'info');
+        if (winId) refreshWindowContent(winId);
+      } else {
+        stopObsRecording(winId);
+      }
+    }
+
+    function stopObsRecording(winId) {
+      if (!obsState.isRecording) return;
+      clearInterval(obsState.recordInterval);
+      const durationStr = formatDuration(Math.max(1, obsState.recordSeconds));
+      obsState.isRecording = false;
+      obsState.recordSeconds = 0;
+      if (winId) refreshWindowContent(winId);
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const fileName = `OBS_Zaznam_${timestamp}.mp4`;
+
+      requestStoragePermission(fileName, async (visibilityChoice) => {
+        const user = getCurrentUser();
+        if (!user) return;
+
+        const newVideoFile = {
+          id: 'vid-' + Date.now(),
+          name: fileName,
+          folder: 'Videa',
+          type: 'video',
+          icon: 'fa-film',
+          color: '#f43f5e',
+          visibility: visibilityChoice,
+          createdAt: new Date().toLocaleString('cs-CZ'),
+          meta: {
+            duration: durationStr,
+            scene: obsState.activeScene,
+            fps: '60 FPS'
+          }
+        };
+
+        user.files.push(newVideoFile);
+        await persistDatabase();
+        applyUserEnvironment();
+        showToast(`Videozáznam „${fileName}“ (${durationStr}) byl uložen do složky Videa v simulátoru!`, 'success');
+      });
+    }
+
+    /*************************************************************************
+     * 6. VISUAL STUDIO CODE WITH .EXE COMPILER TO DESKTOP
+     *************************************************************************/
+    let vscodeDraftCode = `<div style="font-family: 'Segoe UI', sans-serif; padding: 24px; text-align: center; color: #f8fafc;">
+  <div style="font-size: 42px; margin-bottom: 8px;">🚀</div>
+  <h2 style="margin: 0 0 8px 0; color: #4cc2ff;">Moje Vlastní Windows 11 Aplikace</h2>
+  <p style="font-size: 13px; opacity: 0.8; margin-bottom: 18px;">Tato aplikace byla zkompilována ve Visual Studio Code přímo na plochu simulátoru!</p>
+  <button onclick="document.getElementById('counterVal').innerText = Number(document.getElementById('counterVal').innerText) + 1"
+          style="padding: 10px 22px; border-radius: 10px; border: none; background: #4cc2ff; color: #000; font-weight: 700; cursor: pointer;">
+    Klikni na mě (<span id="counterVal">0</span>)
+  </button>
+</div>`;
+
+    let selectedExportIcon = 'fa-rocket';
+    let selectedExportColor = '#4cc2ff';
+
+    const EXE_ICON_PALETTE = [
+      { icon: 'fa-rocket', color: '#4cc2ff', label: 'Raketa' },
+      { icon: 'fa-gamepad', color: '#a855f7', label: 'Hra' },
+      { icon: 'fa-calculator', color: '#38bdf8', label: 'Kalkulačka' },
+      { icon: 'fa-music', color: '#f43f5e', label: 'Hudba' },
+      { icon: 'fa-bolt', color: '#facc15', label: 'Nástroj' },
+      { icon: 'fa-robot', color: '#34d399', label: 'AI Bot' },
+      { icon: 'fa-shield-halved', color: '#60a5fa', label: 'Bezpečnost' },
+      { icon: 'fa-star', color: '#fb923c', label: 'Speciální' },
+      { icon: 'fa-terminal', color: '#a3e635', label: 'Konzole' },
+      { icon: 'fa-globe', color: '#2dd4bf', label: 'Web' },
+      { icon: 'fa-camera', color: '#f472b6', label: 'Kamera' },
+      { icon: 'fa-cube', color: '#818cf8', label: '3D App' }
+    ];
+
+    function renderVsCodeApp(container, winObj) {
+      container.innerHTML = `
+        <div class="h-full flex flex-col bg-[#1e1e1e] text-zinc-200">
+          <!-- VS Code Top Toolbar -->
+          <div class="px-3 py-2 bg-[#252526] border-b border-white/10 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 text-xs">
+              <span class="px-2.5 py-1 rounded bg-[#1e1e1e] border-t-2 border-[#4cc2ff] font-mono text-[11px] flex items-center gap-1.5">
+                <i class="fa-brands fa-html5 text-orange-400"></i> Program.cs / App.html
+              </span>
+              <button onclick="loadVsCodeTemplate('game')" class="px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 text-[11px]">Šablona: Mini Hra</button>
+              <button onclick="loadVsCodeTemplate('todo')" class="px-2.5 py-1 rounded bg-white/5 hover:bg-white/10 text-[11px]">Šablona: Úkolovník</button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="runVsCodePreview('${winObj.id}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-play"></i> Spustit náhled
+              </button>
+              <button onclick="openExportExeModal()" class="px-3.5 py-1.5 rounded-lg bg-[#0078d4] hover:bg-[#1084d9] text-white text-xs font-semibold flex items-center gap-1.5 shadow transition">
+                <i class="fa-solid fa-box-open"></i> Exportovat (.exe)
+              </button>
+            </div>
+          </div>
+
+          <!-- Split Editor & Live Preview -->
+          <div class="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden">
+            <div class="md:col-span-7 flex flex-col border-b md:border-b-0 md:border-r border-white/10">
+              <div class="px-3 py-1 bg-[#1a1a1a] text-[10px] text-zinc-400 font-mono">Editor zdrojového kódu (HTML / JS / UI)</div>
+              <textarea id="vscode-editor-textarea" oninput="vscodeDraftCode = this.value" class="flex-1 w-full bg-[#1e1e1e] text-sky-200 font-mono text-xs p-3.5 outline-none resize-none leading-relaxed">${vscodeDraftCode}</textarea>
+            </div>
+            <div class="md:col-span-5 flex flex-col bg-[#121214]">
+              <div class="px-3 py-1 bg-[#1a1a1a] text-[10px] text-zinc-400 flex justify-between">
+                <span>Živý náhled kompilace</span>
+                <span class="text-emerald-400">Ready</span>
+              </div>
+              <div id="${winObj.id}-preview-box" class="flex-1 overflow-auto p-2">
+                ${vscodeDraftCode}
+              </div>
+            </div>
+          </div>
+
+          <div class="px-3 py-1 bg-[#007acc] text-white text-[10px] flex justify-between">
+            <span>main* • Windows 11 SDK x64</span>
+            <span>UTF-8 • Klikněte na „Exportovat (.exe)“ pro stažení na plochu simulátoru</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function loadVsCodeTemplate(type) {
+      if (type === 'game') {
+        vscodeDraftCode = `<div style="font-family:Segoe UI,sans-serif;padding:20px;text-align:center;color:#fff;">
+  <h2 style="color:#a855f7;">🎮 Chyť hvězdu (.exe)</h2>
+  <p style="font-size:12px;">Skóre: <strong id="gScore" style="font-size:18px;color:#facc15;">0</strong></p>
+  <button onclick="this.style.transform='translate('+(Math.random()*140-70)+'px,'+(Math.random()*90-45)+'px)';document.getElementById('gScore').innerText=Number(document.getElementById('gScore').innerText)+10"
+          style="margin-top:35px;padding:12px 18px;border-radius:99px;background:#a855f7;color:#fff;border:none;font-size:16px;cursor:pointer;transition:0.15s;">
+    ⭐ Klikni!
+  </button>
+</div>`;
+      } else {
+        vscodeDraftCode = `<div style="font-family:Segoe UI,sans-serif;padding:20px;color:#fff;">
+  <h3 style="color:#34d399;margin-top:0;">✅ Můj Úkolovník (.exe)</h3>
+  <div style="display:flex;gap:6px;margin-bottom:12px;">
+    <input id="tInp" placeholder="Nový úkol..." style="flex:1;padding:7px;border-radius:6px;border:1px solid #444;background:#222;color:#fff;"/>
+    <button onclick="if(document.getElementById('tInp').value){let li=document.createElement('li');li.innerText=document.getElementById('tInp').value;document.getElementById('tList').appendChild(li);document.getElementById('tInp').value='';}" style="padding:7px 14px;border-radius:6px;background:#34d399;border:none;font-weight:bold;cursor:pointer;">Přidat</button>
+  </div>
+  <ul id="tList" style="font-size:13px;line-height:1.8;"><li>Dokončit projekt ve Windows 11</li></ul>
+</div>`;
+      }
+      const textarea = document.getElementById('vscode-editor-textarea');
+      if (textarea) textarea.value = vscodeDraftCode;
+    }
+
+    function runVsCodePreview(winId) {
+      const box = document.getElementById(`${winId}-preview-box`);
+      if (box) box.innerHTML = vscodeDraftCode;
+    }
+
+    function openExportExeModal() {
+      const picker = document.getElementById('export-icon-picker');
+      picker.innerHTML = EXE_ICON_PALETTE.map(item => `
+        <button onclick="selectedExportIcon='${item.icon}'; selectedExportColor='${item.color}'; openExportExeModal()" class="p-2.5 rounded-xl border flex flex-col items-center gap-1 transition ${selectedExportIcon === item.icon ? 'bg-[#4cc2ff]/25 border-[#4cc2ff]' : 'bg-white/5 border-white/10 hover:bg-white/10'}">
+          <i class="fa-solid ${item.icon} text-lg" style="color:${item.color}"></i>
+          <span class="text-[10px]">${item.label}</span>
+        </button>
+      `).join('');
+
+      const modal = document.getElementById('vscode-export-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      }
+    }
+
+    function confirmExportExe() {
+      let rawName = (document.getElementById('export-exe-name').value || 'MojeAplikace.exe').trim();
+      if (!rawName.toLowerCase().endsWith('.exe')) rawName += '.exe';
+      closeModal('vscode-export-modal');
+
+      requestStoragePermission(rawName, async (visibilityChoice) => {
+        const user = getCurrentUser();
+        if (!user) return;
+
+        const exeFile = {
+          id: 'exe-' + Date.now(),
+          name: rawName,
+          folder: 'Plocha',
+          type: 'exe',
+          icon: selectedExportIcon,
+          color: selectedExportColor,
+          visibility: visibilityChoice,
+          createdAt: new Date().toLocaleString('cs-CZ'),
+          content: vscodeDraftCode
+        };
+
+        user.files.push(exeFile);
+        await persistDatabase();
+        applyUserEnvironment();
+        showToast(`Aplikace „${rawName}“ byla zkompilována a stažena na Plochu simulátoru!`, 'success');
+      });
+    }
+
+    /*************************************************************************
+     * 7. SHARING ENGINE (`database/link.txt`) & LINK OPENER APP
+     *************************************************************************/
+    async function shareItemToDatabaseLink(type, title, dataObj) {
+      const user = getCurrentUser();
+      const author = user ? user.localUsername : 'Uživatel';
+      const slug = title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) || 'item';
+      const code = `win11://share/${type}-${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      DatabaseState.links.unshift({
+        code,
+        type,
+        title,
+        author,
+        data: dataObj
+      });
+
+      await persistDatabase(true);
+      applyUserEnvironment();
+
+      // Copy to clipboard safely
+      copyTextToClipboard(code);
+      showToast(`Sdílený odkaz zkopírován a uložen do database/link.txt: ${code}`, 'success');
+      return code;
+    }
+
+    function copyTextToClipboard(text) {
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(temp);
+    }
+
+    function renderLinksApp(container, winObj) {
+      container.innerHTML = `
+        <div class="h-full flex flex-col p-5 gap-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-link text-emerald-400"></i> Odkazy — Správce sdílení (<code>database/link.txt</code>)
+              </h2>
+              <p class="text-xs opacity-70">Vložte vygenerovaný lokální odkaz z libovolné aplikace pro okamžité přesměrování.</p>
+            </div>
+            <button onclick="downloadLinkTxtFile()" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-file-export text-[#4cc2ff]"></i> Export link.txt
+            </button>
+          </div>
+
+          <!-- Paste & Open Bar -->
+          <div class="win-card p-3.5 flex flex-col sm:flex-row gap-2">
+            <input id="link-opener-input" type="text" placeholder="Vložte odkaz např. win11://share/welcome-video" class="flex-1 px-3.5 py-2 rounded-xl bg-black/25 border border-white/15 focus:border-[#4cc2ff] outline-none text-xs font-mono" />
+            <button onclick="openSharedLinkByCode(document.getElementById('link-opener-input').value)" class="px-5 py-2 rounded-xl bg-[#4cc2ff] hover:bg-[#60cdff] text-black font-semibold text-xs flex items-center justify-center gap-2">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Otevřít odkaz
+            </button>
+          </div>
+
+          <!-- List of links in database/link.txt -->
+          <div class="flex-1 overflow-y-auto space-y-2">
+            <div class="text-xs font-semibold opacity-75">Dostupné záznamy v <code>database/link.txt</code> (${DatabaseState.links.length}):</div>
+            ${DatabaseState.links.map(l => `
+              <div class="win-card p-3 flex items-center justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded bg-[#4cc2ff]/20 text-[#4cc2ff] text-[10px] font-bold uppercase">${l.type}</span>
+                    <span class="text-xs font-semibold truncate">${l.title}</span>
+                  </div>
+                  <div class="text-[11px] font-mono opacity-75 truncate mt-1 select-all">${l.code}</div>
+                  <div class="text-[10px] opacity-55">Autor: ${l.author}</div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="copyTextToClipboard('${l.code}'); showToast('Odkaz zkopírován do schránky', 'info')" title="Kopírovat odkaz" class="p-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs">
+                    <i class="fa-regular fa-copy"></i>
+                  </button>
+                  <button onclick="openSharedLinkByCode('${l.code}')" class="px-3 py-1.5 rounded-lg bg-[#0078d4] hover:bg-[#1084d9] text-white text-xs font-medium">
+                    Spustit
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function openSharedLinkByCode(rawCode) {
+      const code = (rawCode || '').trim();
+      if (!code) {
+        showToast('Vložte prosím sdílený odkaz.', 'warning');
+        return;
+      }
+      const entry = DatabaseState.links.find(l => l.code === code);
+      if (!entry) {
+        showToast('Odkaz nebyl v database/link.txt nalezen.', 'warning');
+        return;
+      }
+
+      showToast(`Přesměrovávám na: ${entry.title}`, 'info');
+
+      if (entry.type === 'video') {
+        openApp('youtube', {
+          playingVideo: {
+            title: entry.title,
+            author: entry.author,
+            views: entry.data.views || 'Sdílené video',
+            duration: entry.data.duration || '03:00',
+            color: entry.data.color || 'from-sky-600 to-indigo-800',
+            description: entry.data.description || 'Otevřeno přes sdílený odkaz z database/link.txt'
+          }
+        });
+      } else if (entry.type === 'exe') {
+        openApp('custom_exe', {
+          title: entry.title,
+          icon: entry.data.icon || 'fa-cube',
+          color: entry.data.iconColor || '#4cc2ff',
+          code: entry.data.code
+        });
+      } else if (entry.type === 'text') {
+        openApp('notepad', {
+          title: entry.title,
+          content: entry.data.content || ''
+        });
+      } else if (entry.type === 'screenshot') {
+        openApp('media_viewer', {
+          title: entry.title,
+          file: {
+            name: entry.title,
+            type: 'screenshot',
+            createdAt: 'Sdíleno přes link.txt',
+            meta: entry.data
+          }
+        });
+      }
+    }
+
+    function downloadLinkTxtFile() {
+      const blob = new Blob([serializeLinkTxt()], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'link.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /*************************************************************************
+     * 8. FILE EXPLORER, YOUTUBE, SETTINGS, TERMINAL & BUILT-IN APPS
+     *************************************************************************/
+    function renderExplorerApp(container, winObj) {
+      const user = getCurrentUser();
+      const activeFolder = winObj.params.folder || 'Tento počítač';
+      const folders = ['Tento počítač', 'Plocha', 'Dokumenty', 'Obrázky', 'Videa', 'OneDrive (Sdílené)'];
+
+      let displayedFiles = [];
+      if (user) {
+        if (activeFolder === 'Tento počítač') {
+          displayedFiles = user.files;
+        } else if (activeFolder === 'OneDrive (Sdílené)') {
+          displayedFiles = user.files.filter(f => f.visibility === 'public');
+        } else {
+          displayedFiles = user.files.filter(f => f.folder === activeFolder);
+        }
+      }
+
+      container.innerHTML = `
+        <div class="h-full flex flex-col">
+          <!-- Address & Action Bar -->
+          <div class="px-3 py-2 border-b border-white/10 flex items-center gap-2 text-xs">
+            <button onclick="winObjFolderNav('${winObj.id}', 'Tento počítač')" class="p-1.5 rounded hover:bg-white/10"><i class="fa-solid fa-house"></i></button>
+            <div class="flex-1 px-3 py-1.5 rounded-lg bg-black/20 border border-white/10 flex items-center gap-2">
+              <i class="fa-solid fa-folder text-amber-400"></i>
+              <span>${activeFolder}</span>
+            </div>
+            <button onclick="openApp('obs')" class="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 flex items-center gap-1.5">
+              <i class="fa-solid fa-camera text-rose-400"></i> Nový záznam OBS
+            </button>
+          </div>
+
+          <div class="flex-1 grid grid-cols-12 overflow-hidden">
+            <!-- Left Navigation Sidebar -->
+            <div class="col-span-4 sm:col-span-3 border-r border-white/10 p-2 space-y-1 overflow-y-auto">
+              ${folders.map(f => `
+                <button onclick="winObjFolderNav('${winObj.id}', '${f}')" class="w-full text-left px-2.5 py-2 rounded-lg text-xs flex items-center gap-2 transition ${activeFolder === f ? 'bg-[#4cc2ff]/20 text-[#4cc2ff] font-semibold' : 'hover:bg-white/10'}">
+                  <i class="fa-solid ${f.includes('OneDrive') ? 'fa-cloud text-sky-400' : f === 'Obrázky' ? 'fa-images text-purple-400' : f === 'Videa' ? 'fa-film text-rose-400' : 'fa-folder text-amber-400'} w-4"></i>
+                  <span class="truncate">${f}</span>
+                </button>
+              `).join('')}
+            </div>
+
+            <!-- Right File Grid -->
+            <div class="col-span-8 sm:col-span-9 p-4 overflow-y-auto">
+              ${displayedFiles.length === 0 ? `
+                <div class="h-full flex flex-col items-center justify-center opacity-55 text-xs text-center">
+                  <i class="fa-regular fa-folder-open text-4xl mb-2"></i>
+                  <p>Tato složka je prázdná.</p>
+                </div>
+              ` : `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  ${displayedFiles.map(file => `
+                    <div class="win-card p-3 flex flex-col justify-between gap-2.5 hover:border-[#4cc2ff]/50 transition">
+                      <div onclick="openVirtualFileById('${file.id}')" class="flex items-start gap-3 cursor-pointer">
+                        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                          <i class="fa-solid ${file.icon || 'fa-file'} text-xl" style="color:${file.color || '#60cdff'}"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <div class="text-xs font-semibold truncate">${file.name}</div>
+                          <div class="text-[10px] opacity-65 mt-0.5">${file.folder} • ${file.visibility === 'public' ? '☁️ OneDrive' : '💻 Lokální'}</div>
+                          <div class="text-[10px] opacity-50">${file.createdAt || ''}</div>
+                        </div>
+                      </div>
+                      <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
+                        <button onclick="openVirtualFileById('${file.id}')" class="text-[#4cc2ff] hover:underline font-medium">Otevřít</button>
+                        <div class="flex items-center gap-2">
+                          <button onclick="shareVirtualFile('${file.id}')" title="Sdílet odkazem (link.txt)" class="px-2 py-0.5 rounded bg-white/10 hover:bg-white/15">
+                            <i class="fa-solid fa-share-nodes"></i> Sdílet
+                          </button>
+                          <button onclick="deleteVirtualFile('${file.id}', '${winObj.id}')" title="Smazat" class="text-rose-400 hover:text-rose-300 px-1">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function winObjFolderNav(winId, folderName) {
+      const w = openWindows.find(win => win.id === winId);
+      if (w) {
+        w.params.folder = folderName;
+        refreshWindowContent(winId);
+      }
+    }
+
+    function openVirtualFileById(fileId) {
+      const user = getCurrentUser();
+      if (!user) return;
+      const file = user.files.find(f => f.id === fileId);
+      if (file) openVirtualFile(file);
+    }
+
+    function openVirtualFile(file) {
+      if (file.type === 'exe') {
+        openApp('custom_exe', {
+          title: file.name,
+          icon: file.icon,
+          color: file.color,
+          code: file.content
+        });
+      } else if (file.type === 'text') {
+        openApp('notepad', {
+          title: file.name,
+          fileId: file.id,
+          content: file.content
+        });
+      } else if (file.type === 'screenshot' || file.type === 'video') {
+        openApp('media_viewer', {
+          title: file.name,
+          file
+        });
+      }
+    }
+
+    function shareVirtualFile(fileId) {
+      const user = getCurrentUser();
+      const file = user?.files.find(f => f.id === fileId);
+      if (!file) return;
+
+      if (file.type === 'exe') {
+        shareItemToDatabaseLink('exe', file.name, { icon: file.icon, iconColor: file.color, code: file.content });
+      } else if (file.type === 'text') {
+        shareItemToDatabaseLink('text', file.name, { content: file.content });
+      } else if (file.type === 'screenshot') {
+        shareItemToDatabaseLink('screenshot', file.name, file.meta || {});
+      } else if (file.type === 'video') {
+        shareItemToDatabaseLink('video', file.name, { duration: file.meta?.duration || '00:30', views: 'OBS Záznam', color: 'from-rose-600 to-slate-900', description: 'Záznam obrazovky pořízený v OBS Studio.' });
+      }
+    }
+
+    async function deleteVirtualFile(fileId, explorerWinId) {
+      const user = getCurrentUser();
+      if (!user) return;
+      user.files = user.files.filter(f => f.id !== fileId);
+      await persistDatabase();
+      applyUserEnvironment();
+      if (explorerWinId) refreshWindowContent(explorerWinId);
+      showToast('Soubor byl odstraněn.', 'info');
+    }
+
+    function renderMediaViewerApp(container, winObj) {
+      const file = winObj.params.file;
+      if (!file) return;
+      const isVideo = file.type === 'video';
+      container.innerHTML = `
+        <div class="h-full flex flex-col bg-black/80 text-white p-5 items-center justify-center text-center gap-4">
+          <div class="w-full max-w-xl aspect-video rounded-2xl bg-gradient-to-br from-[#0a192f] via-[#1c7ed6]/40 to-[#030712] border border-white/15 flex flex-col items-center justify-center p-6 shadow-2xl relative">
+            <i class="fa-solid ${isVideo ? 'fa-circle-play text-rose-500' : 'fa-image text-sky-400'} text-5xl mb-3"></i>
+            <h3 class="text-base font-semibold">${file.name}</h3>
+            <p class="text-xs text-white/70 mt-1">
+              ${isVideo ? `Záznam OBS Studio • Délka: ${file.meta?.duration || '00:15'} • ${file.meta?.fps || '60 FPS'}` : `Snímek obrazovky • Rozlišení: ${file.meta?.resolution || '1920x1080'}`}
+            </p>
+            <span class="mt-3 px-3 py-1 rounded-full bg-white/10 text-[11px]">Scéna: ${file.meta?.scene || 'Hlavní scéna'}</span>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="shareVirtualFile('${file.id}')" class="px-4 py-2 rounded-xl bg-[#0078d4] hover:bg-[#1084d9] text-xs font-semibold flex items-center gap-2">
+              <i class="fa-solid fa-share-nodes"></i> Vytvořit odkaz pro sdílení (link.txt)
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCustomExeApp(container, winObj) {
+      container.innerHTML = `
+        <div class="h-full w-full overflow-auto bg-[#121216] text-white">
+          ${winObj.params.code || '<div class="p-6">Spuštěná aplikace .exe</div>'}
+        </div>
+      `;
+    }
+
+    /* YouTube Simulator App */
+    function renderYoutubeApp(container, winObj) {
+      const user = getCurrentUser();
+      const videos = user ? user.youtubeVideos : [];
+      const playing = winObj.params.playingVideo || null;
+
+      container.innerHTML = `
+        <div class="h-full flex flex-col bg-[#0f0f0f] text-white">
+          <!-- YouTube Header -->
+          <div class="px-4 py-2.5 border-b border-white/10 flex items-center justify-between gap-3">
+            <div onclick="ytClosePlayer('${winObj.id}')" class="flex items-center gap-2 cursor-pointer">
+              <i class="fa-brands fa-youtube text-2xl text-red-600"></i>
+              <span class="font-bold text-sm tracking-tight">YouTube <sup class="text-[9px] text-zinc-400">CZ</sup></span>
+            </div>
+            <button onclick="ytPromptUpload('${winObj.id}')" class="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold flex items-center gap-2 transition">
+              <i class="fa-solid fa-video text-red-500"></i> Nahrát video
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 overflow-y-auto p-4 space-y-5">
+            ${playing ? `
+              <div class="space-y-3 pb-4 border-b border-white/10">
+                <div class="w-full aspect-video max-h-72 rounded-2xl bg-gradient-to-br ${playing.color} flex flex-col items-center justify-center p-6 relative overflow-hidden shadow-xl">
+                  <div class="w-16 h-16 rounded-full bg-black/50 backdrop-blur flex items-center justify-center mb-3 animate-pulse">
+                    <i class="fa-solid fa-play text-2xl text-white ml-1"></i>
+                  </div>
+                  <h3 class="text-lg font-bold text-center">${playing.title}</h3>
+                  <p class="text-xs text-white/80 mt-1">${playing.author} • ${playing.duration}</p>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h2 class="text-base font-bold">${playing.title}</h2>
+                    <p class="text-xs text-zinc-400">${playing.author} • ${playing.views}</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button onclick="shareItemToDatabaseLink('video', '${playing.title.replace(/'/g, '')}', {duration:'${playing.duration}', views:'${playing.views}', color:'${playing.color}', description:'${(playing.description||'').replace(/'/g, '')}'})" class="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-xs font-semibold flex items-center gap-2">
+                      <i class="fa-solid fa-share"></i> Sdílet odkaz
+                    </button>
+                    <button onclick="ytClosePlayer('${winObj.id}')" class="px-3 py-2 rounded-full bg-white/10 hover:bg-white/15 text-xs">Zavřít přehrávač</button>
+                  </div>
+                </div>
+                <p class="text-xs text-zinc-300 bg-white/5 p-3 rounded-xl">${playing.description || ''}</p>
+              </div>
+            ` : ''}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${videos.map((v, idx) => `
+                <div class="rounded-xl bg-white/5 border border-white/10 overflow-hidden flex flex-col justify-between hover:border-white/25 transition">
+                  <div onclick="ytPlayVideo('${winObj.id}', ${idx})" class="cursor-pointer">
+                    <div class="aspect-video bg-gradient-to-br ${v.color} p-4 flex flex-col justify-between relative">
+                      <span class="self-start px-2 py-0.5 rounded bg-black/50 text-[10px]">${v.visibility === 'public' ? '☁️ Veřejné' : '💻 Lokální'}</span>
+                      <span class="self-end px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-mono">${v.duration}</span>
+                    </div>
+                    <div class="p-3">
+                      <h4 class="text-xs font-semibold line-clamp-2">${v.title}</h4>
+                      <p class="text-[11px] text-zinc-400 mt-1">${v.author} • ${v.views}</p>
+                    </div>
+                  </div>
+                  <div class="px-3 pb-3 flex justify-end">
+                    <button onclick="shareItemToDatabaseLink('video', '${v.title.replace(/'/g, '')}', {duration:'${v.duration}', views:'${v.views}', color:'${v.color}', description:'${(v.description||'').replace(/'/g, '')}'})" class="px-3 py-1 rounded-full bg-white/10 hover:bg-[#4cc2ff] hover:text-black text-[11px] font-medium flex items-center gap-1.5 transition">
+                      <i class="fa-solid fa-share-nodes"></i> Sdílet
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function ytPlayVideo(winId, idx) {
+      const user = getCurrentUser();
+      const w = openWindows.find(win => win.id === winId);
+      if (user && w) {
+        w.params.playingVideo = user.youtubeVideos[idx];
+        refreshWindowContent(winId);
+      }
+    }
+
+    function ytClosePlayer(winId) {
+      const w = openWindows.find(win => win.id === winId);
+      if (w) {
+        w.params.playingVideo = null;
+        refreshWindowContent(winId);
+      }
+    }
+
+    function ytPromptUpload(winId) {
+      const title = `Moje nové video #${Math.floor(100 + Math.random() * 900)}`;
+      requestStoragePermission(title, async (visibilityChoice) => {
+        const user = getCurrentUser();
+        if (!user) return;
+        user.youtubeVideos.unshift({
+          id: 'yt-' + Date.now(),
+          title,
+          author: user.localUsername,
+          views: '1 zhlédnutí',
+          duration: '02:45',
+          color: 'from-amber-500 to-rose-700',
+          visibility: visibilityChoice,
+          description: 'Video nahrané uživatelem ve Windows 11 Pro simulátoru.'
+        });
+        await persistDatabase();
+        refreshWindowContent(winId);
+        showToast(`Video „${title}“ bylo úspěšně nahráno (${visibilityChoice === 'public' ? 'veřejně do database' : 'lokálně'})!`, 'success');
+      });
+    }
+
+    /* Settings App (Accounts & GitHub database/ Sync, Privacy -> OneDrive, Personalization, System) */
+    function renderSettingsApp(container, winObj) {
+      const user = getCurrentUser();
+      const activeTab = winObj.params.tab || 'privacy';
+
+      const tabs = [
+        { id: 'system', name: 'Systém', icon: 'fa-laptop' },
+        { id: 'personalization', name: 'Přizpůsobení', icon: 'fa-paintbrush' },
+        { id: 'accounts', name: 'Účty a GitHub Sync', icon: 'fa-user-check' },
+        { id: 'privacy', name: 'Soukromí a OneDrive', icon: 'fa-shield-halved' }
+      ];
+
+      let tabHtml = '';
+      if (activeTab === 'privacy') {
+        const modes = [
+          {
+            id: 'public',
+            title: 'Do sdíleného OneDrive (veřejně do database)',
+            desc: 'Všechny nahrané soubory, videa, screenshoty i aplikace se automaticky synchronizují do database/ pro všechna vaše zařízení.',
+            icon: 'fa-globe text-sky-400'
+          },
+          {
+            id: 'local',
+            title: 'Lokálně (cache)',
+            desc: 'Ukládá data pouze do lokální mezipaměti tohoto prohlížeče bez veřejného sdílení.',
+            icon: 'fa-hard-drive text-amber-400'
+          },
+          {
+            id: 'never',
+            title: 'Neukládat',
+            desc: 'Dočasná relace – nové soubory a změny se nebudou trvale ukládat.',
+            icon: 'fa-ban text-rose-400'
+          },
+          {
+            id: 'ask',
+            title: 'Pokaždé se zeptat',
+            desc: 'Při každém uložení nebo nahrání souboru (v OBS, YouTube, VS Code i Notepadu) se zobrazí dialog s výběrem Veřejně vs. Lokálně.',
+            icon: 'fa-circle-question text-emerald-400'
+          }
+        ];
+
+        tabHtml = `
+          <h2 class="text-lg font-semibold mb-1">Soukromí a zabezpečení &rarr; OneDrive</h2>
+          <p class="text-xs opacity-70 mb-4">Nastavte pravidla pro ukládání a cloudovou synchronizaci vašeho obsahu.</p>
+          <div class="space-y-2.5">
+            ${modes.map(m => `
+              <div onclick="setOneDriveStorageMode('${m.id}', '${winObj.id}')" class="win-card p-4 cursor-pointer flex items-start gap-3.5 transition ${user?.oneDriveMode === m.id ? 'border-[#4cc2ff] bg-[#4cc2ff]/15' : 'hover:bg-white/5'}">
+                <i class="fa-solid ${m.icon} text-lg mt-0.5"></i>
+                <div class="flex-1">
+                  <div class="text-xs font-semibold flex items-center justify-between">
+                    <span>${m.title}</span>
+                    ${user?.oneDriveMode === m.id ? '<span class="px-2 py-0.5 rounded-full bg-[#4cc2ff] text-black text-[10px] font-bold">Aktivní</span>' : ''}
+                  </div>
+                  <p class="text-[11px] opacity-75 mt-1 leading-relaxed">${m.desc}</p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (activeTab === 'accounts') {
+        tabHtml = `
+          <h2 class="text-lg font-semibold mb-1">Microsoft účet & GitHub <code>database/</code></h2>
+          <p class="text-xs opacity-70 mb-4">Přihlášení pod stejným Microsoft účtem na jiném zařízení obnoví vaše aplikace a soubory.</p>
+
+          <div class="win-card p-4 mb-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full bg-[#0078d4] text-white flex items-center justify-center font-bold">${user?.localUsername?.charAt(0).toUpperCase() || 'U'}</div>
+              <div>
+                <div class="text-sm font-semibold">${user?.localUsername}</div>
+                <div class="text-xs opacity-75">${user?.email}</div>
+              </div>
+            </div>
+            <button onclick="signOutUser()" class="px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-medium">Odhlásit se</button>
+          </div>
+
+          <div class="win-card p-4 space-y-3">
+            <div class="text-xs font-semibold flex items-center gap-2">
+              <i class="fa-brands fa-github text-base"></i> Propojení s GitHub repozitářem (složka <code>database/</code>)
+            </div>
+            <p class="text-[11px] opacity-75">Pokud tento web hostujete na GitHubu, můžete vyplnit údaje pro přímý zápis do <code>database/accounts.json</code> a <code>database/link.txt</code>.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              <div>
+                <label class="block text-[11px] opacity-70 mb-1">GitHub Owner (Uživatel)</label>
+                <input id="gh-owner" type="text" value="${DatabaseState.githubConfig.owner}" placeholder="např. jan-novak" class="w-full px-3 py-2 rounded-lg bg-black/25 border border-white/15 outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] opacity-70 mb-1">Název repozitáře</label>
+                <input id="gh-repo" type="text" value="${DatabaseState.githubConfig.repo}" placeholder="např. win11-simulator" class="w-full px-3 py-2 rounded-lg bg-black/25 border border-white/15 outline-none" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] opacity-70 mb-1">GitHub Personal Access Token (volitelné pro zápis do repozitáře)</label>
+                <input id="gh-token" type="password" value="${DatabaseState.githubConfig.token}" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full px-3 py-2 rounded-lg bg-black/25 border border-white/15 outline-none" />
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button onclick="saveGitHubSyncConfig()" class="px-4 py-2 rounded-lg bg-[#4cc2ff] text-black font-semibold text-xs">Uložit a synchronizovat</button>
+              <button onclick="exportDatabaseBundle()" class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs">Stáhnout database/ soubory</button>
+            </div>
+          </div>
+        `;
+      } else if (activeTab === 'personalization') {
+        const walls = [
+          { id: 'wallpaper-bloom-dark', name: 'Windows 11 Bloom (Tmavý)', cls: 'wallpaper-bloom-dark' },
+          { id: 'wallpaper-bloom-light', name: 'Windows 11 Bloom (Světlý)', cls: 'wallpaper-bloom-light' },
+          { id: 'wallpaper-sunset', name: 'Západ slunce', cls: 'wallpaper-sunset' },
+          { id: 'wallpaper-emerald', name: 'Smaragdová záře', cls: 'wallpaper-emerald' }
+        ];
+        tabHtml = `
+          <h2 class="text-lg font-semibold mb-1">Přizpůsobení</h2>
+          <p class="text-xs opacity-70 mb-4">Zvolte tapetu pracovní plochy a barevný režim Windows 11.</p>
+          <div class="grid grid-cols-2 gap-3 mb-5">
+            ${walls.map(w => `
+              <div onclick="setDesktopWallpaper('${w.id}', '${winObj.id}')" class="cursor-pointer rounded-xl overflow-hidden border-2 transition ${user?.wallpaper === w.id ? 'border-[#4cc2ff]' : 'border-transparent'}">
+                <div class="h-24 ${w.cls}"></div>
+                <div class="p-2 bg-black/30 text-xs font-medium">${w.name}</div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="win-card p-4 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-semibold">Barevný režim systému</div>
+              <div class="text-[11px] opacity-70">Přepíná mezi tmavým a světlým Mica motivem</div>
+            </div>
+            <button onclick="toggleSystemTheme(); refreshWindowContent('${winObj.id}')" class="px-4 py-2 rounded-lg bg-[#4cc2ff] text-black font-semibold text-xs">
+              Přepnout režim (${user?.theme === 'dark' ? 'Tmavý' : 'Světlý'})
+            </button>
+          </div>
+        `;
+      } else {
+        tabHtml = `
+          <h2 class="text-lg font-semibold mb-1">Systém &rarr; O produktu</h2>
+          <p class="text-xs opacity-70 mb-4">Specifikace zařízení a operačního systému.</p>
+          <div class="win-card p-4 space-y-2.5 text-xs">
+            <div class="flex justify-between py-1 border-b border-white/10"><span class="opacity-70">Edice</span><span class="font-semibold">Windows 11 Pro WebOS</span></div>
+            <div class="flex justify-between py-1 border-b border-white/10"><span class="opacity-70">Verze</span><span>24H2 (Build 26100.2033)</span></div>
+            <div class="flex justify-between py-1 border-b border-white/10"><span class="opacity-70">Oblast a klávesnice</span><span>${user?.region} • ${user?.keyboard}</span></div>
+            <div class="flex justify-between py-1"><span class="opacity-70">Přihlášený účet</span><span>${user?.email}</span></div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="h-full grid grid-cols-12 overflow-hidden">
+          <div class="col-span-4 sm:col-span-3 border-r border-white/10 p-3 space-y-1">
+            ${tabs.map(t => `
+              <button onclick="switchSettingsTab('${winObj.id}', '${t.id}')" class="w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center gap-2.5 transition ${activeTab === t.id ? 'bg-[#4cc2ff]/20 text-[#4cc2ff] font-semibold' : 'hover:bg-white/10'}">
+                <i class="fa-solid ${t.icon} w-4"></i>
+                <span>${t.name}</span>
+              </button>
+            `).join('')}
+          </div>
+          <div class="col-span-8 sm:col-span-9 p-5 overflow-y-auto">
+            ${tabHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function switchSettingsTab(winId, tabId) {
+      const w = openWindows.find(win => win.id === winId);
+      if (w) {
+        w.params.tab = tabId;
+        refreshWindowContent(winId);
+      }
+    }
+
+    async function setOneDriveStorageMode(mode, winId) {
+      const user = getCurrentUser();
+      if (!user) return;
+      user.oneDriveMode = mode;
+      await persistDatabase(true);
+      applyUserEnvironment();
+      refreshWindowContent(winId);
+      showToast('Nastavení ukládání OneDrive bylo aktualizováno.', 'success');
+    }
+
+    async function setDesktopWallpaper(wallId, winId) {
+      const user = getCurrentUser();
+      if (!user) return;
+      user.wallpaper = wallId;
+      await persistDatabase();
+      applyUserEnvironment();
+      refreshWindowContent(winId);
+    }
+
+    async function saveGitHubSyncConfig() {
+      DatabaseState.githubConfig.owner = document.getElementById('gh-owner').value.trim();
+      DatabaseState.githubConfig.repo = document.getElementById('gh-repo').value.trim();
+      DatabaseState.githubConfig.token = document.getElementById('gh-token').value.trim();
+      await persistDatabase(true);
+      await pullFromGitHubDatabase(false);
+    }
+
+    function exportDatabaseBundle() {
+      downloadLinkTxtFile();
+      const blob = new Blob([JSON.stringify(DatabaseState.accounts, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'accounts.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Soubory accounts.json a link.txt pro složku database/ byly staženy.', 'success');
+    }
+
+    /* Terminal App */
+    function renderTerminalApp(container, winObj) {
+      container.innerHTML = `
+        <div class="h-full bg-[#0c0c0c] text-emerald-400 font-mono text-xs p-3.5 flex flex-col">
+          <div id="${winObj.id}-out" class="flex-1 overflow-y-auto space-y-1.5 selectable">
+            <div>Windows PowerShell [Verze 11.0.26100]</div>
+            <div class="text-zinc-400">Napište <span class="text-white">help</span> pro zobrazení dostupných příkazů.</div>
+          </div>
+          <div class="pt-2 flex items-center gap-2">
+            <span class="text-sky-400">PS C:\\Users\\${getCurrentUser()?.localUsername || 'User'}></span>
+            <input onkeydown="if(event.key==='Enter') runTerminalCmd(this, '${winObj.id}')" type="text" autofocus class="flex-1 bg-transparent outline-none text-white" />
+          </div>
+        </div>
+      `;
+    }
+
+    function runTerminalCmd(input, winId) {
+      const cmd = input.value.trim();
+      input.value = '';
+      const out = document.getElementById(`${winId}-out`);
+      const user = getCurrentUser();
+      const line = document.createElement('div');
+      line.innerHTML = `<span class="text-sky-400">PS&gt;</span> <span class="text-white">${cmd}</span>`;
+      out.appendChild(line);
+
+      const resp = document.createElement('div');
+      resp.className = 'text-zinc-300 whitespace-pre-wrap';
+      const lower = cmd.toLowerCase();
+
+      if (lower === 'help') {
+        resp.textContent = 'Dostupné příkazy: help, dir, ls, whoami, ver, links, obs, vscode, cls';
+      } else if (lower === 'cls' || lower === 'clear') {
+        out.innerHTML = '';
+        return;
+      } else if (lower === 'whoami') {
+        resp.textContent = `${user?.localUsername} (${user?.email})`;
+      } else if (lower === 'ver') {
+        resp.textContent = 'Microsoft Windows 11 Pro [Verze 24H2 WebOS]';
+      } else if (lower === 'dir' || lower === 'ls') {
+        resp.textContent = (user?.files || []).map(f => `[${f.folder}]  ${f.name}  (${f.visibility})`).join('\n') || 'Žádné soubory.';
+      } else if (lower === 'links') {
+        resp.textContent = serializeLinkTxt();
+      } else if (lower === 'obs') {
+        openApp('obs');
+        resp.textContent = 'Spouštím OBS Studio...';
+      } else if (lower === 'vscode') {
+        openApp('vscode');
+        resp.textContent = 'Spouštím Visual Studio Code...';
+      } else if (cmd) {
+        resp.textContent = `Příkaz '${cmd}' nebyl rozpoznán. Zadejte 'help'.`;
+      }
+      out.appendChild(resp);
+      out.scrollTop = out.scrollHeight;
+    }
+
+    /* Notepad App */
+    function renderNotepadApp(container, winObj) {
+      const title = winObj.params.title || 'Novy_dokument.txt';
+      const content = winObj.params.content || '';
+      container.innerHTML = `
+        <div class="h-full flex flex-col">
+          <div class="px-3 py-1.5 border-b border-white/10 flex items-center justify-between text-xs">
+            <input id="${winObj.id}-fname" type="text" value="${title}" class="px-2 py-1 rounded bg-black/20 border border-white/10 outline-none text-xs w-48" />
+            <div class="flex items-center gap-2">
+              <button onclick="saveNotepadFile('${winObj.id}')" class="px-3 py-1 rounded-lg bg-[#4cc2ff] text-black font-semibold">Uložit</button>
+              <button onclick="shareItemToDatabaseLink('text', document.getElementById('${winObj.id}-fname').value, {content: document.getElementById('${winObj.id}-txt').value})" class="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15">Sdílet</button>
+            </div>
+          </div>
+          <textarea id="${winObj.id}-txt" class="flex-1 w-full p-4 bg-transparent outline-none resize-none text-xs leading-relaxed font-mono">${content}</textarea>
+        </div>
+      `;
+    }
+
+    function saveNotepadFile(winId) {
+      const fname = document.getElementById(`${winId}-fname`).value.trim() || 'Dokument.txt';
+      const content = document.getElementById(`${winId}-txt`).value;
+      requestStoragePermission(fname, async (visibilityChoice) => {
+        const user = getCurrentUser();
+        if (!user) return;
+        user.files.push({
+          id: 'txt-' + Date.now(),
+          name: fname,
+          folder: 'Dokumenty',
+          type: 'text',
+          icon: 'fa-file-lines',
+          color: '#60cdff',
+          visibility: visibilityChoice,
+          createdAt: new Date().toLocaleString('cs-CZ'),
+          content
+        });
+        await persistDatabase();
+        applyUserEnvironment();
+        showToast(`Soubor „${fname}“ uložen do složky Dokumenty.`, 'success');
+      });
+    }
+
+    /* Edge Browser App */
+    function renderEdgeApp(container, winObj) {
+      container.innerHTML = `
+        <div class="h-full flex flex-col">
+          <div class="px-3 py-2 border-b border-white/10 flex items-center gap-2 text-xs">
+            <i class="fa-brands fa-edge text-sky-400 text-base"></i>
+            <div class="flex-1 px-3 py-1.5 rounded-full bg-black/25 border border-white/10 flex items-center justify-between">
+              <span>https://www.microsoft.com/cs-cz/windows/windows-11</span>
+              <i class="fa-solid fa-lock text-emerald-400 text-[10px]"></i>
+            </div>
+          </div>
+          <div class="flex-1 p-6 overflow-y-auto flex flex-col items-center justify-center text-center gap-4">
+            <i class="fa-brands fa-microsoft text-5xl text-[#4cc2ff]"></i>
+            <h2 class="text-xl font-semibold">Microsoft Edge — Rychlý rozcestník</h2>
+            <p class="text-xs opacity-75 max-w-md">Přistupujte rychle ke službám v rámci vašeho simulátoru Windows 11 Pro.</p>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <button onclick="openApp('youtube')" class="win-card p-4 hover:border-[#4cc2ff] transition flex flex-col items-center gap-2">
+                <i class="fa-brands fa-youtube text-2xl text-red-500"></i>
+                <span class="text-xs font-medium">YouTube</span>
+              </button>
+              <button onclick="openApp('links')" class="win-card p-4 hover:border-[#4cc2ff] transition flex flex-col items-center gap-2">
+                <i class="fa-solid fa-link text-2xl text-emerald-400"></i>
+                <span class="text-xs font-medium">Odkazy</span>
+              </button>
+              <button onclick="openApp('vscode')" class="win-card p-4 hover:border-[#4cc2ff] transition flex flex-col items-center gap-2">
+                <i class="fa-solid fa-code text-2xl text-sky-400"></i>
+                <span class="text-xs font-medium">VS Code</span>
+              </button>
+              <button onclick="openApp('settings', {tab:'accounts'})" class="win-card p-4 hover:border-[#4cc2ff] transition flex flex-col items-center gap-2">
+                <i class="fa-brands fa-github text-2xl"></i>
+                <span class="text-xs font-medium">GitHub Sync</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* Calculator App */
+    function renderCalculatorApp(container, winObj) {
+      const buttons = ['7','8','9','/','4','5','6','*','1','2','3','-','C','0','=','+'];
+      container.innerHTML = `
+        <div class="h-full flex flex-col p-3 gap-2">
+          <input id="${winObj.id}-disp" readonly value="0" class="w-full p-3 rounded-xl bg-black/30 text-right text-2xl font-semibold outline-none" />
+          <div class="flex-1 grid grid-cols-4 gap-1.5">
+            ${buttons.map(b => `
+              <button onclick="calcPress('${winObj.id}', '${b}')" class="rounded-xl font-semibold text-sm transition ${b==='=' ? 'bg-[#4cc2ff] text-black' : 'bg-white/10 hover:bg-white/15'}">${b}</button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function calcPress(winId, key) {
+      const disp = document.getElementById(`${winId}-disp`);
+      if (!disp) return;
+      if (key === 'C') disp.value = '0';
+      else if (key === '=') {
+        try { disp.value = String(Function('"use strict";return (' + disp.value + ')')()); }
+        catch { disp.value = 'Chyba'; }
+      } else {
+        disp.value = disp.value === '0' ? key : disp.value + key;
+      }
+    }
+
+    /* Paint App */
+    function renderPaintApp(container, winObj) {
+      container.innerHTML = `
+        <div class="h-full flex flex-col">
+          <div class="px-3 py-2 border-b border-white/10 flex items-center gap-3 text-xs">
+            <span>Barva:</span>
+            <input id="${winObj.id}-color" type="color" value="#4cc2ff" class="w-7 h-7 rounded cursor-pointer bg-transparent" />
+            <button onclick="clearPaintCanvas('${winObj.id}')" class="px-3 py-1 rounded bg-white/10 hover:bg-white/15">Vymazat plátno</button>
+          </div>
+          <div class="flex-1 p-3 bg-zinc-900 flex items-center justify-center">
+            <canvas id="${winObj.id}-canvas" width="680" height="380" class="bg-white rounded-lg shadow-lg cursor-crosshair max-w-full max-h-full"></canvas>
+          </div>
+        </div>
+      `;
+      setTimeout(() => initPaintCanvas(winObj.id), 30);
+    }
+
+    function initPaintCanvas(winId) {
+      const canvas = document.getElementById(`${winId}-canvas`);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+      canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); };
+      canvas.onmousemove = (e) => {
+        if (!drawing) return;
+        ctx.strokeStyle = document.getElementById(`${winId}-color`).value;
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+      };
+      canvas.onmouseup = () => drawing = false;
+      canvas.onmouseleave = () => drawing = false;
+    }
+
+    function clearPaintCanvas(winId) {
+      const canvas = document.getElementById(`${winId}-canvas`);
+      if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    /* Task Manager App */
+    function renderTaskMgrApp(container, winObj) {
+      container.innerHTML = `
+        <div class="h-full flex flex-col p-4 gap-4 text-xs">
+          <div class="grid grid-cols-3 gap-3">
+            <div class="win-card p-3">
+              <div class="opacity-70">Procesor (CPU)</div>
+              <div class="text-xl font-bold text-[#4cc2ff] mt-1">${Math.floor(8 + openWindows.length * 4)} %</div>
+            </div>
+            <div class="win-card p-3">
+              <div class="opacity-70">Paměť (RAM)</div>
+              <div class="text-xl font-bold text-purple-400 mt-1">${(3.2 + openWindows.length * 0.4).toFixed(1)} / 16 GB</div>
+            </div>
+            <div class="win-card p-3">
+              <div class="opacity-70">Spuštěné procesy</div>
+              <div class="text-xl font-bold text-emerald-400 mt-1">${openWindows.length}</div>
+            </div>
+          </div>
+          <div class="flex-1 win-card overflow-y-auto divide-y divide-white/10">
+            ${openWindows.map(w => `
+              <div class="p-3 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <i class="${w.icon.startsWith('fa-brands') ? w.icon : 'fa-solid ' + w.icon}" style="color:${w.color}"></i>
+                  <span class="font-medium">${w.title}</span>
+                </div>
+                <button onclick="closeWindow('${w.id}'); refreshWindowContent('${winObj.id}')" class="px-3 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300">Ukončit úlohu</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    /*************************************************************************
+     * 9. HELPER ACTIONS, CLOCK, POPUPS & TOASTS
+     *************************************************************************/
+    function togglePopup(id) {
+      const popups = ['start-menu', 'widgets-panel', 'quick-settings-panel'];
+      popups.forEach(p => {
+        const el = document.getElementById(p);
+        if (!el) return;
+        if (p === id) {
+          const isHidden = el.classList.contains('hidden');
+          el.classList.toggle('hidden', !isHidden);
+          el.classList.toggle('flex', isHidden);
+        } else {
+          el.classList.add('hidden');
+          el.classList.remove('flex');
+        }
+      });
+      document.getElementById('desktop-context-menu').classList.add('hidden');
+    }
+
+    function hideAllPopups() {
+      ['start-menu', 'widgets-panel', 'quick-settings-panel', 'desktop-context-menu'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.add('hidden');
+          el.classList.remove('flex');
+        }
+      });
+    }
+
+    function handleDesktopClick(e) {
+      hideAllPopups();
+      document.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+    }
+
+    function showDesktopContextMenu(e) {
+      e.preventDefault();
+      hideAllPopups();
+      const menu = document.getElementById('desktop-context-menu');
+      menu.style.left = Math.min(window.innerWidth - 230, e.clientX) + 'px';
+      menu.style.top = Math.min(window.innerHeight - 260, e.clientY) + 'px';
+      menu.classList.remove('hidden');
+    }
+
+    function refreshDesktop() {
+      renderDesktopIcons();
+      showToast('Pracovní plocha aktualizována.', 'info');
+    }
+
+    async function createNewFolderOnDesktop() {
+      const user = getCurrentUser();
+      if (!user) return;
+      user.files.push({
+        id: 'fld-' + Date.now(),
+        name: 'Nová složka',
+        folder: 'Plocha',
+        type: 'text',
+        icon: 'fa-folder',
+        color: '#fbbf24',
+        visibility: 'local',
+        createdAt: new Date().toLocaleString('cs-CZ'),
+        content: 'Obsah nové složky.'
+      });
+      await persistDatabase();
+      renderDesktopIcons();
+    }
+
+    async function saveQuickWidgetNote() {
+      const txt = document.getElementById('widget-quick-note').value.trim();
+      if (!txt) return;
+      document.getElementById('widget-quick-note').value = '';
+      hideAllPopups();
+      requestStoragePermission('Rychla_poznamka.txt', async (vis) => {
+        const user = getCurrentUser();
+        if (!user) return;
+        user.files.push({
+          id: 'note-' + Date.now(),
+          name: `Poznamka_${Date.now().toString().slice(-4)}.txt`,
+          folder: 'Dokumenty',
+          type: 'text',
+          icon: 'fa-file-lines',
+          color: '#fbbf24',
+          visibility: vis,
+          createdAt: new Date().toLocaleString('cs-CZ'),
+          content: txt
+        });
+        await persistDatabase();
+        applyUserEnvironment();
+        showToast('Rychlá poznámka uložena do Dokumentů.', 'success');
+      });
+    }
+
+    function toggleQuickTile(key) {
+      const btn = document.getElementById('qs-' + key);
+      if (!btn) return;
+      const active = btn.classList.contains('bg-[#4cc2ff]');
+      btn.classList.toggle('bg-[#4cc2ff]', !active);
+      btn.classList.toggle('text-black', !active);
+      btn.classList.toggle('bg-white/10', active);
+    }
+
+    let nightLightEnabled = false;
+    function toggleNightLight() {
+      nightLightEnabled = !nightLightEnabled;
+      const btn = document.getElementById('qs-night');
+      btn.classList.toggle('bg-[#4cc2ff]', nightLightEnabled);
+      btn.classList.toggle('text-black', nightLightEnabled);
+      document.getElementById('desktop-environment').style.filter = nightLightEnabled ? 'sepia(0.28) brightness(0.95)' : 'none';
+    }
+
+    async function toggleSystemTheme() {
+      const user = getCurrentUser();
+      if (!user) return;
+      user.theme = user.theme === 'dark' ? 'light' : 'dark';
+      if (user.theme === 'light' && user.wallpaper === 'wallpaper-bloom-dark') user.wallpaper = 'wallpaper-bloom-light';
+      if (user.theme === 'dark' && user.wallpaper === 'wallpaper-bloom-light') user.wallpaper = 'wallpaper-bloom-dark';
+      await persistDatabase();
+      applyUserEnvironment();
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'border-emerald-400/50 text-emerald-300',
+        warning: 'border-amber-400/50 text-amber-300',
+        info: 'border-[#4cc2ff]/50 text-[#4cc2ff]'
+      };
+      toast.className = `win-mica px-4 py-3 rounded-xl border ${colors[type] || colors.info} text-xs shadow-xl max-w-sm flex items-center gap-2.5 pointer-events-auto transition-all duration-300`;
+      toast.innerHTML = `<i class="fa-solid fa-bell"></i><span class="text-white">${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 4200);
+    }
+
+    function updateClocks() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
+      const dateShort = now.toLocaleDateString('cs-CZ');
+      const dateLong = now.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' });
+
+      const tTime = document.getElementById('taskbar-time');
+      const tDate = document.getElementById('taskbar-date');
+      const lTime = document.getElementById('lock-time');
+      const lDate = document.getElementById('lock-date');
+
+      if (tTime) tTime.textContent = timeStr;
+      if (tDate) tDate.textContent = dateShort;
+      if (lTime) lTime.textContent = timeStr;
+      if (lDate) lDate.textContent = dateLong.charAt(0).toUpperCase() + dateLong.slice(1);
+    }
+
+    /*************************************************************************
+     * 10. BOOT SEQUENCE
+     *************************************************************************/
+    window.addEventListener('DOMContentLoaded', async () => {
+      updateClocks();
+      setInterval(updateClocks, 1000);
+
+      // Unlock Lock Screen on Enter key
+      window.addEventListener('keydown', (e) => {
+        const lock = document.getElementById('lock-screen');
+        const clockView = document.getElementById('lock-clock-view');
+        if (!lock.classList.contains('hidden') && !clockView.classList.contains('hidden') && e.key === 'Enter') {
+          showLoginForm();
+        }
+      });
+
+      await initDatabaseAndSession();
+
+      if (!SessionState.oobeCompleted || !getCurrentUser()) {
+        document.getElementById('oobe-screen').classList.remove('hidden');
+        renderOobeStep();
+      } else {
+        document.getElementById('oobe-screen').classList.add('hidden');
+        applyUserEnvironment();
+        openLockScreen(false);
+      }
+    });
+  </script>
+</body>
+</html>
