@@ -1,0 +1,11 @@
+{
+  "format": 1,
+  "accounts": [
+    {
+      "username": "TondaFox",
+      "salt": "9c0474057eabcefab2ba304e0a24bfbcbf22795351dd518b",
+      "verifier": "82fc1b3c27810c63d5258135b1a8843d81d4b04220b56882d648a1000dc4cbda",
+      "createdAt": "2026-11-18T17:41:10.080Z"
+    }
+  ]
+}
